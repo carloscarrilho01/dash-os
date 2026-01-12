@@ -125,7 +125,7 @@ app.get('/api/conversations/:userId', (req, res) => {
 });
 
 // Endpoint para enviar mensagem (intervenção manual)
-app.post('/api/conversations/:userId/send', (req, res) => {
+app.post('/api/conversations/:userId/send', async (req, res) => {
   const { userId } = req.params;
   const { message } = req.body;
 
@@ -156,6 +156,40 @@ app.post('/api/conversations/:userId/send', (req, res) => {
     userId,
     conversation: conversations.get(userId)
   });
+
+  // Envia webhook para n8n quando atendente envia mensagem
+  const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://webhookworkflow.carrilhodev.com/webhook/agentteste';
+
+  try {
+    const webhookPayload = {
+      userId,
+      userName: conversation.userName,
+      message,
+      isAgent: true,
+      messageId: newMessage.id,
+      timestamp: newMessage.timestamp,
+      source: 'dashboard'
+    };
+
+    console.log('📤 Enviando webhook para n8n:', N8N_WEBHOOK_URL);
+
+    const webhookResponse = await fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(webhookPayload)
+    });
+
+    if (webhookResponse.ok) {
+      console.log('✅ Webhook enviado com sucesso para n8n');
+    } else {
+      console.error('❌ Erro ao enviar webhook para n8n:', webhookResponse.status);
+    }
+  } catch (error) {
+    console.error('❌ Erro ao enviar webhook para n8n:', error.message);
+    // Não falha a requisição se o webhook falhar
+  }
 
   res.json({ success: true, messageId: newMessage.id });
 });
