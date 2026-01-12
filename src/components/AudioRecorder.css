@@ -1,0 +1,169 @@
+.btn-record-audio {
+  background: transparent;
+  border: none;
+  color: #8696a0;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.btn-record-audio:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #00a884;
+}
+
+.audio-recording {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #2a3942;
+  border-radius: 24px;
+}
+
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pulse-dot {
+  width: 12px;
+  height: 12px;
+  background: #ff4444;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.recording-time {
+  color: #e9edef;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 40px;
+}
+
+.btn-stop-recording,
+.btn-cancel-recording {
+  background: transparent;
+  border: none;
+  color: #e9edef;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.btn-stop-recording {
+  color: #00a884;
+}
+
+.btn-stop-recording:hover {
+  background: rgba(0, 168, 132, 0.1);
+}
+
+.btn-cancel-recording:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.audio-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #2a3942;
+  border-radius: 24px;
+  flex: 1;
+}
+
+.audio-player {
+  flex: 1;
+  height: 32px;
+  max-width: 300px;
+}
+
+.audio-player::-webkit-media-controls-panel {
+  background: #2a3942;
+}
+
+.audio-duration {
+  color: #8696a0;
+  font-size: 12px;
+}
+
+.audio-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-cancel,
+.btn-send-audio {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.btn-cancel {
+  color: #e9edef;
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-send-audio {
+  color: #00a884;
+}
+
+.btn-send-audio:hover {
+  background: rgba(0, 168, 132, 0.1);
+}
+
+/* Componente de mensagem de áudio */
+.message-audio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 250px;
+}
+
+.audio-message-player {
+  flex: 1;
+  height: 32px;
+}
+
+.audio-message-player::-webkit-media-controls-panel {
+  background: transparent;
+}
+
+.message.user .audio-message-player::-webkit-media-controls-panel {
+  background: #202c33;
+}
+
+.message.bot .audio-message-player::-webkit-media-controls-panel,
+.message.agent .audio-message-player::-webkit-media-controls-panel {
+  background: #005c4b;
+}

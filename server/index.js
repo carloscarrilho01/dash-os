@@ -198,7 +198,7 @@ app.get('/api/conversations/:userId', async (req, res) => {
 app.post('/api/conversations/:userId/send', async (req, res) => {
   try {
     const { userId } = req.params;
-    const { message } = req.body;
+    const { message, type = 'text', duration } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Mensagem é obrigatória' });
@@ -212,6 +212,9 @@ app.post('/api/conversations/:userId/send', async (req, res) => {
 
     const newMessage = {
       text: message,
+      type,
+      duration,
+      audioUrl: type === 'audio' ? message : undefined,
       isBot: false,
       isAgent: true,
       timestamp: new Date().toISOString()
@@ -234,6 +237,8 @@ app.post('/api/conversations/:userId/send', async (req, res) => {
         userId,
         userName: conversation.userName,
         message,
+        type,
+        duration,
         isAgent: true,
         messageId: Date.now().toString(),
         timestamp: newMessage.timestamp,

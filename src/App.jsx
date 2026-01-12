@@ -74,8 +74,19 @@ function App() {
     }
   }
 
-  const handleSendMessage = async (message) => {
-    if (!selectedConversation || !message.trim()) return
+  const handleSendMessage = async (messageData) => {
+    if (!selectedConversation) return
+
+    // Suporta tanto string quanto objeto { type, content, duration }
+    const payload = typeof messageData === 'string'
+      ? { message: messageData, type: 'text' }
+      : {
+          message: messageData.content,
+          type: messageData.type || 'text',
+          duration: messageData.duration
+        }
+
+    if (!payload.message || (payload.type === 'text' && !payload.message.trim())) return
 
     try {
       await fetch(`${API_URL}/api/conversations/${selectedConversation.userId}/send`, {
@@ -83,7 +94,7 @@ function App() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message })
+        body: JSON.stringify(payload)
       })
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error)
