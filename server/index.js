@@ -4,6 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { connectDatabase, ConversationDB } from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,7 +12,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const httpServer = createServer(app);
 
-// CORS configuration - permite o próprio domínio e localhost para desenvolvimento
+// CORS configuration
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
@@ -30,11 +31,10 @@ const io = new Server(httpServer, {
 // Middleware
 app.use(cors({
   origin: (origin, callback) => {
-    // Permite requisições sem origin (mobile apps, curl, etc) ou de origens permitidas
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true); // Em produção, permita todas as origens para teste
+      callback(null, true);
     }
   },
   credentials: true
@@ -46,11 +46,66 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../dist')));
 }
 
-// Armazena conversas em memória (em produção, use um banco de dados)
-const conversations = new Map();
+// Conecta ao banco de dados
+let useDatabase = false;
+const conversations = new Map(); // Fallback para memória
+
+(async () => {
+  useDatabase = await connectDatabase();
+  if (useDatabase) {
+    console.log('💾 Usando MongoDB para persistência');
+  } else {
+    console.log('💭 Usando armazenamento em memória (dados serão perdidos ao reiniciar)');
+  }
+})();
+
+// Helper: Salvar conversa (DB ou memória)
+async function saveConversation(userId, data) {
+  if (useDatabase) {
+    return await ConversationDB.createOrUpdate(userId, data);
+  } else {
+    conversations.set(userId, data);
+    return data;
+  }
+}
+
+// Helper: Buscar conversa (DB ou memória)
+async function getConversation(userId) {
+  if (useDatabase) {
+    return await ConversationDB.findByUserId(userId);
+  } else {
+    return conversations.get(userId);
+  }
+}
+
+// Helper: Buscar todas as conversas (DB ou memória)
+async function getAllConversations() {
+  if (useDatabase) {
+    return await ConversationDB.findAll();
+  } else {
+    return Array.from(conversations.values())
+      .sort((a, b) => new Date(b.lastTimestamp) - new Date(a.lastTimestamp));
+  }
+}
+
+// Helper: Adicionar mensagem (DB ou memória)
+async function addMessage(userId, message) {
+  if (useDatabase) {
+    return await ConversationDB.addMessage(userId, message);
+  } else {
+    const conversation = conversations.get(userId);
+    if (conversation) {
+      conversation.messages.push(message);
+      conversation.lastMessage = message.text;
+      conversation.lastTimestamp = message.timestamp;
+      conversations.set(userId, conversation);
+    }
+    return conversation;
+  }
+}
 
 // Endpoint para receber webhooks do n8n
-app.post('/api/webhook/message', (req, res) => {
+app.post('/api/webhook/message', async (req, res) => {
   try {
     const { userId, userName, message, isBot, timestamp } = req.body;
 
@@ -58,23 +113,22 @@ app.post('/api/webhook/message', (req, res) => {
       return res.status(400).json({ error: 'userId e message são obrigatórios' });
     }
 
-    // Cria ou atualiza a conversa
-    if (!conversations.has(userId)) {
-      conversations.set(userId, {
+    // Busca ou cria conversa
+    let conversation = await getConversation(userId);
+
+    if (!conversation) {
+      conversation = {
         userId,
         userName: userName || `Usuário ${userId}`,
         messages: [],
         lastMessage: message,
         lastTimestamp: timestamp || new Date().toISOString(),
         unread: 0
-      });
+      };
     }
-
-    const conversation = conversations.get(userId);
 
     // Adiciona a mensagem
     const newMessage = {
-      id: Date.now().toString(),
       text: message,
       isBot: isBot !== undefined ? isBot : true,
       timestamp: timestamp || new Date().toISOString()
@@ -85,16 +139,19 @@ app.post('/api/webhook/message', (req, res) => {
     conversation.lastTimestamp = newMessage.timestamp;
 
     if (!isBot) {
-      conversation.unread++;
+      conversation.unread = (conversation.unread || 0) + 1;
     }
 
-    // Emite a atualização via WebSocket para todos os clientes conectados
+    // Salva no banco ou memória
+    await saveConversation(userId, conversation);
+
+    // Emite a atualização via WebSocket
     io.emit('message', {
       userId,
-      conversation: conversations.get(userId)
+      conversation
     });
 
-    res.json({ success: true, messageId: newMessage.id });
+    res.json({ success: true, messageId: Date.now().toString() });
   } catch (error) {
     console.error('Erro ao processar webhook:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
@@ -102,104 +159,120 @@ app.post('/api/webhook/message', (req, res) => {
 });
 
 // Endpoint para obter todas as conversas
-app.get('/api/conversations', (req, res) => {
-  const conversationsList = Array.from(conversations.values())
-    .sort((a, b) => new Date(b.lastTimestamp) - new Date(a.lastTimestamp));
-
-  res.json(conversationsList);
+app.get('/api/conversations', async (req, res) => {
+  try {
+    const conversationsList = await getAllConversations();
+    res.json(conversationsList);
+  } catch (error) {
+    console.error('Erro ao buscar conversas:', error);
+    res.status(500).json({ error: 'Erro ao buscar conversas' });
+  }
 });
 
 // Endpoint para obter uma conversa específica
-app.get('/api/conversations/:userId', (req, res) => {
-  const { userId } = req.params;
-  const conversation = conversations.get(userId);
+app.get('/api/conversations/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const conversation = await getConversation(userId);
 
-  if (!conversation) {
-    return res.status(404).json({ error: 'Conversa não encontrada' });
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversa não encontrada' });
+    }
+
+    // Marca como lida
+    if (useDatabase) {
+      await ConversationDB.markAsRead(userId);
+    } else {
+      conversation.unread = 0;
+      conversations.set(userId, conversation);
+    }
+
+    res.json(conversation);
+  } catch (error) {
+    console.error('Erro ao buscar conversa:', error);
+    res.status(500).json({ error: 'Erro ao buscar conversa' });
   }
-
-  // Marca como lida
-  conversation.unread = 0;
-
-  res.json(conversation);
 });
 
 // Endpoint para enviar mensagem (intervenção manual)
 app.post('/api/conversations/:userId/send', async (req, res) => {
-  const { userId } = req.params;
-  const { message } = req.body;
-
-  if (!message) {
-    return res.status(400).json({ error: 'Mensagem é obrigatória' });
-  }
-
-  const conversation = conversations.get(userId);
-
-  if (!conversation) {
-    return res.status(404).json({ error: 'Conversa não encontrada' });
-  }
-
-  const newMessage = {
-    id: Date.now().toString(),
-    text: message,
-    isBot: false,
-    isAgent: true, // Mensagem do atendente
-    timestamp: new Date().toISOString()
-  };
-
-  conversation.messages.push(newMessage);
-  conversation.lastMessage = message;
-  conversation.lastTimestamp = newMessage.timestamp;
-
-  // Emite a atualização via WebSocket
-  io.emit('message', {
-    userId,
-    conversation: conversations.get(userId)
-  });
-
-  // Envia webhook para n8n quando atendente envia mensagem
-  const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://webhookworkflow.carrilhodev.com/webhook/agentteste';
-
   try {
-    const webhookPayload = {
-      userId,
-      userName: conversation.userName,
-      message,
+    const { userId } = req.params;
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Mensagem é obrigatória' });
+    }
+
+    const conversation = await getConversation(userId);
+
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversa não encontrada' });
+    }
+
+    const newMessage = {
+      text: message,
+      isBot: false,
       isAgent: true,
-      messageId: newMessage.id,
-      timestamp: newMessage.timestamp,
-      source: 'dashboard'
+      timestamp: new Date().toISOString()
     };
 
-    console.log('📤 Enviando webhook para n8n:', N8N_WEBHOOK_URL);
+    // Adiciona mensagem
+    const updatedConversation = await addMessage(userId, newMessage);
 
-    const webhookResponse = await fetch(N8N_WEBHOOK_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(webhookPayload)
+    // Emite a atualização via WebSocket
+    io.emit('message', {
+      userId,
+      conversation: updatedConversation || conversation
     });
 
-    if (webhookResponse.ok) {
-      console.log('✅ Webhook enviado com sucesso para n8n');
-    } else {
-      console.error('❌ Erro ao enviar webhook para n8n:', webhookResponse.status);
-    }
-  } catch (error) {
-    console.error('❌ Erro ao enviar webhook para n8n:', error.message);
-    // Não falha a requisição se o webhook falhar
-  }
+    // Envia webhook para n8n quando atendente envia mensagem
+    const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://webhookworkflow.carrilhodev.com/webhook/agentteste';
 
-  res.json({ success: true, messageId: newMessage.id });
+    try {
+      const webhookPayload = {
+        userId,
+        userName: conversation.userName,
+        message,
+        isAgent: true,
+        messageId: Date.now().toString(),
+        timestamp: newMessage.timestamp,
+        source: 'dashboard'
+      };
+
+      console.log('📤 Enviando webhook para n8n:', N8N_WEBHOOK_URL);
+
+      const webhookResponse = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(webhookPayload)
+      });
+
+      if (webhookResponse.ok) {
+        console.log('✅ Webhook enviado com sucesso para n8n');
+      } else {
+        console.error('❌ Erro ao enviar webhook para n8n:', webhookResponse.status);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao enviar webhook para n8n:', error.message);
+    }
+
+    res.json({ success: true, messageId: newMessage.timestamp });
+  } catch (error) {
+    console.error('Erro ao enviar mensagem:', error);
+    res.status(500).json({ error: 'Erro ao enviar mensagem' });
+  }
 });
 
 // WebSocket connection
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log('Cliente conectado:', socket.id);
 
   // Envia todas as conversas quando um cliente se conecta
-  socket.emit('init', Array.from(conversations.values()));
+  const allConversations = await getAllConversations();
+  socket.emit('init', allConversations);
 
   socket.on('disconnect', () => {
     console.log('Cliente desconectado:', socket.id);
