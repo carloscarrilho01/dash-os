@@ -41,11 +41,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Serve static files from the React app (production)
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
-}
-
 // Conecta ao banco de dados
 let useDatabase = false;
 const conversations = new Map(); // Fallback para memória
@@ -307,13 +302,13 @@ io.on('connection', async (socket) => {
   });
 });
 
-// Serve React app for any other route (production) - EXCETO rotas de API
+// Serve static files DEPOIS das rotas de API (production)
 if (process.env.NODE_ENV === 'production') {
+  // Serve arquivos estáticos (CSS, JS, imagens, etc)
+  app.use(express.static(path.join(__dirname, '../dist')));
+
+  // Serve index.html para todas as outras rotas (SPA routing)
   app.get('*', (req, res) => {
-    // Não serve index.html para rotas de API
-    if (req.path.startsWith('/api/')) {
-      return res.status(404).json({ error: 'API endpoint não encontrado' });
-    }
     res.sendFile(path.join(__dirname, '../dist/index.html'));
   });
 }
