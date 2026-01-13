@@ -3,11 +3,14 @@ import { format, isToday, isYesterday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import AudioRecorder from './AudioRecorder'
 import FileUploader from './FileUploader'
+import QuickMessagesBar from './QuickMessagesBar'
+import QuickMessagesManager from './QuickMessagesManager'
 import './ChatWindow.css'
 import './FileUploader.css'
 
 function ChatWindow({ conversation, onSendMessage }) {
   const [message, setMessage] = useState('')
+  const [showManager, setShowManager] = useState(false)
   const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {
@@ -153,6 +156,11 @@ function ChatWindow({ conversation, onSendMessage }) {
         </div>
       </div>
 
+      <QuickMessagesBar
+        onSelectMessage={onSendMessage}
+        onManage={() => setShowManager(true)}
+      />
+
       <div className="chat-input">
         <form onSubmit={handleSubmit} className="input-container">
           <button type="button" className="icon-button">
@@ -180,6 +188,10 @@ function ChatWindow({ conversation, onSendMessage }) {
           </button>
         </form>
       </div>
+
+      {showManager && (
+        <QuickMessagesManager onClose={() => setShowManager(false)} />
+      )}
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { connectDatabase, ConversationDB } from './database.js';
+import { connectDatabase, ConversationDB, QuickMessageDB } from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -206,6 +206,148 @@ app.get('/api/conversations/:userId', async (req, res) => {
     res.status(500).json({ error: 'Erro ao buscar conversa' });
   }
 });
+
+// ============================================
+// ENDPOINTS PARA QUICK MESSAGES
+// ============================================
+
+// GET /api/quick-messages - Lista todas as mensagens rápidas
+app.get('/api/quick-messages', async (req, res) => {
+  try {
+    const quickMessages = await QuickMessageDB.findAll();
+    res.json(quickMessages);
+  } catch (error) {
+    console.error('Erro ao buscar quick messages:', error);
+    res.status(500).json({ error: 'Erro ao buscar quick messages' });
+  }
+});
+
+// GET /api/quick-messages/:id - Busca uma mensagem rápida específica
+app.get('/api/quick-messages/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const quickMessage = await QuickMessageDB.findById(id);
+
+    if (!quickMessage) {
+      return res.status(404).json({ error: 'Quick message não encontrada' });
+    }
+
+    res.json(quickMessage);
+  } catch (error) {
+    console.error('Erro ao buscar quick message:', error);
+    res.status(500).json({ error: 'Erro ao buscar quick message' });
+  }
+});
+
+// POST /api/quick-messages - Cria nova mensagem rápida
+app.post('/api/quick-messages', async (req, res) => {
+  try {
+    const { text, emoji, category, shortcut, order, enabled } = req.body;
+
+    if (!text) {
+      return res.status(400).json({ error: 'O campo "text" é obrigatório' });
+    }
+
+    const quickMessage = await QuickMessageDB.create({
+      text,
+      emoji,
+      category,
+      shortcut,
+      order,
+      enabled
+    });
+
+    if (!quickMessage) {
+      return res.status(500).json({ error: 'Erro ao criar quick message' });
+    }
+
+    // Emite evento WebSocket para atualizar todos os clientes
+    io.emit('quick-messages-updated');
+
+    res.status(201).json(quickMessage);
+  } catch (error) {
+    console.error('Erro ao criar quick message:', error);
+    res.status(500).json({ error: 'Erro ao criar quick message' });
+  }
+});
+
+// PUT /api/quick-messages/:id - Atualiza mensagem rápida
+app.put('/api/quick-messages/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text, emoji, category, shortcut, order, enabled } = req.body;
+
+    const quickMessage = await QuickMessageDB.update(id, {
+      text,
+      emoji,
+      category,
+      shortcut,
+      order,
+      enabled
+    });
+
+    if (!quickMessage) {
+      return res.status(404).json({ error: 'Quick message não encontrada' });
+    }
+
+    // Emite evento WebSocket para atualizar todos os clientes
+    io.emit('quick-messages-updated');
+
+    res.json(quickMessage);
+  } catch (error) {
+    console.error('Erro ao atualizar quick message:', error);
+    res.status(500).json({ error: 'Erro ao atualizar quick message' });
+  }
+});
+
+// DELETE /api/quick-messages/:id - Remove mensagem rápida
+app.delete('/api/quick-messages/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const success = await QuickMessageDB.delete(id);
+
+    if (!success) {
+      return res.status(404).json({ error: 'Quick message não encontrada' });
+    }
+
+    // Emite evento WebSocket para atualizar todos os clientes
+    io.emit('quick-messages-updated');
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao deletar quick message:', error);
+    res.status(500).json({ error: 'Erro ao deletar quick message' });
+  }
+});
+
+// POST /api/quick-messages/reorder - Reordena mensagens rápidas
+app.post('/api/quick-messages/reorder', async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ error: 'orderedIds deve ser um array' });
+    }
+
+    const success = await QuickMessageDB.reorder(orderedIds);
+
+    if (!success) {
+      return res.status(500).json({ error: 'Erro ao reordenar quick messages' });
+    }
+
+    // Emite evento WebSocket para atualizar todos os clientes
+    io.emit('quick-messages-updated');
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao reordenar quick messages:', error);
+    res.status(500).json({ error: 'Erro ao reordenar quick messages' });
+  }
+});
+
+// ============================================
+// ENDPOINTS PARA CONVERSAS
+// ============================================
 
 // Endpoint para enviar mensagem (intervenção manual)
 app.post('/api/conversations/:userId/send', async (req, res) => {

@@ -1,0 +1,116 @@
+.quick-messages-bar {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 8px 12px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.quick-messages-bar.loading,
+.quick-messages-bar.empty {
+  text-align: center;
+  padding: 12px;
+  color: #666;
+  font-size: 13px;
+}
+
+.quick-messages-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.quick-message-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.quick-message-btn:hover {
+  background: #25d366;
+  color: #fff;
+  border-color: #25d366;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(37, 211, 102, 0.3);
+}
+
+.quick-message-emoji {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.quick-message-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-message-toggle-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: bold;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-message-toggle-btn:hover {
+  background: #e8e8e8;
+  border-color: #b0b0b0;
+}
+
+.quick-message-manage-btn {
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.quick-message-manage-btn:hover {
+  background: #e8e8e8;
+  border-color: #b0b0b0;
+  color: #333;
+}
+
+/* Scrollbar customizado */
+.quick-messages-bar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.quick-messages-bar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.quick-messages-bar::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 3px;
+}
+
+.quick-messages-bar::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}

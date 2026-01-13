@@ -172,3 +172,181 @@ export const ConversationDB = {
     }
   }
 };
+
+// Funções para Quick Messages
+export const QuickMessageDB = {
+  async findAll() {
+    if (!isConnected) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('quick_messages')
+        .select('*')
+        .eq('enabled', true)
+        .order('order', { ascending: true });
+
+      if (error) throw error;
+
+      return data.map(row => ({
+        id: row.id,
+        text: row.text,
+        emoji: row.emoji,
+        category: row.category,
+        shortcut: row.shortcut,
+        order: row.order,
+        enabled: row.enabled,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar quick messages:', error);
+      return [];
+    }
+  },
+
+  async findById(id) {
+    if (!isConnected) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('quick_messages')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') return null;
+        throw error;
+      }
+
+      return {
+        id: data.id,
+        text: data.text,
+        emoji: data.emoji,
+        category: data.category,
+        shortcut: data.shortcut,
+        order: data.order,
+        enabled: data.enabled,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    } catch (error) {
+      console.error('Erro ao buscar quick message:', error);
+      return null;
+    }
+  },
+
+  async create(quickMessage) {
+    if (!isConnected) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('quick_messages')
+        .insert({
+          text: quickMessage.text,
+          emoji: quickMessage.emoji || null,
+          category: quickMessage.category || 'general',
+          shortcut: quickMessage.shortcut || null,
+          order: quickMessage.order || 0,
+          enabled: quickMessage.enabled !== undefined ? quickMessage.enabled : true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        text: data.text,
+        emoji: data.emoji,
+        category: data.category,
+        shortcut: data.shortcut,
+        order: data.order,
+        enabled: data.enabled,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    } catch (error) {
+      console.error('Erro ao criar quick message:', error);
+      return null;
+    }
+  },
+
+  async update(id, quickMessage) {
+    if (!isConnected) return null;
+
+    try {
+      const updateData = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (quickMessage.text !== undefined) updateData.text = quickMessage.text;
+      if (quickMessage.emoji !== undefined) updateData.emoji = quickMessage.emoji;
+      if (quickMessage.category !== undefined) updateData.category = quickMessage.category;
+      if (quickMessage.shortcut !== undefined) updateData.shortcut = quickMessage.shortcut;
+      if (quickMessage.order !== undefined) updateData.order = quickMessage.order;
+      if (quickMessage.enabled !== undefined) updateData.enabled = quickMessage.enabled;
+
+      const { data, error } = await supabase
+        .from('quick_messages')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        id: data.id,
+        text: data.text,
+        emoji: data.emoji,
+        category: data.category,
+        shortcut: data.shortcut,
+        order: data.order,
+        enabled: data.enabled,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    } catch (error) {
+      console.error('Erro ao atualizar quick message:', error);
+      return null;
+    }
+  },
+
+  async delete(id) {
+    if (!isConnected) return false;
+
+    try {
+      const { error } = await supabase
+        .from('quick_messages')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao deletar quick message:', error);
+      return false;
+    }
+  },
+
+  async reorder(orderedIds) {
+    if (!isConnected) return false;
+
+    try {
+      // Atualiza a ordem de cada mensagem
+      for (let i = 0; i < orderedIds.length; i++) {
+        await supabase
+          .from('quick_messages')
+          .update({ order: i, updated_at: new Date().toISOString() })
+          .eq('id', orderedIds[i]);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao reordenar quick messages:', error);
+      return false;
+    }
+  }
+};

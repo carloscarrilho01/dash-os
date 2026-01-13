@@ -12,6 +12,9 @@ const API_URL = import.meta.env.VITE_API_URL || (
 )
 const socket = io(API_URL)
 
+// Tornar socket disponível globalmente para os componentes
+window.socket = socket
+
 function App() {
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
