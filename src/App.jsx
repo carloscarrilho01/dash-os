@@ -77,6 +77,8 @@ function App() {
   const handleSendMessage = async (messageData) => {
     if (!selectedConversation) return
 
+    console.log('📤 handleSendMessage chamado com:', messageData)
+
     // Suporta tanto string quanto objeto { type, content, duration, fileName, etc }
     const payload = typeof messageData === 'string'
       ? { message: messageData, type: 'text' }
@@ -90,18 +92,34 @@ function App() {
           fileCategory: messageData.fileCategory
         }
 
-    if (!payload.message || (payload.type === 'text' && !payload.message.trim())) return
+    console.log('📦 Payload montado:', payload)
+
+    // Valida apenas mensagens de texto vazias
+    if (payload.type === 'text' && (!payload.message || !payload.message.trim())) {
+      console.log('⚠️ Mensagem de texto vazia, ignorando')
+      return
+    }
+
+    // Para arquivos e áudios, só precisa ter conteúdo
+    if (!payload.message) {
+      console.log('⚠️ Payload sem mensagem, ignorando')
+      return
+    }
 
     try {
-      await fetch(`${API_URL}/api/conversations/${selectedConversation.userId}/send`, {
+      console.log('🚀 Enviando para:', `${API_URL}/api/conversations/${selectedConversation.userId}/send`)
+      const response = await fetch(`${API_URL}/api/conversations/${selectedConversation.userId}/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       })
+
+      const result = await response.json()
+      console.log('✅ Resposta do servidor:', result)
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error)
+      console.error('❌ Erro ao enviar mensagem:', error)
     }
   }
 
