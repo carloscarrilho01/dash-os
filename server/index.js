@@ -39,7 +39,10 @@ app.use(cors({
   },
   credentials: true
 }));
-app.use(express.json());
+
+// Aumenta o limite do body para 50MB (para suportar arquivos em base64)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Log de todas as requisições para debug
 app.use((req, res, next) => {
