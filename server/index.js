@@ -576,6 +576,10 @@ app.put('/api/leads/:uuid/status', async (req, res) => {
       return res.status(400).json({ error: 'Status é obrigatório' });
     }
 
+    // Busca o lead antes da atualização para ter o status anterior
+    const previousLead = await LeadDB.findByUuid(uuid);
+    const previousStatus = previousLead?.status;
+
     const updatedLead = await LeadDB.updateStatus(uuid, status);
 
     if (!updatedLead) {
@@ -587,6 +591,52 @@ app.put('/api/leads/:uuid/status', async (req, res) => {
     io.emit('lead-updated', updatedLead);
 
     console.log(`✅ Status do lead ${uuid} atualizado para: ${status}`);
+
+    // Envia webhook para n8n quando o status do lead mudar
+    const LEAD_STATUS_WEBHOOK_URL = process.env.LEAD_STATUS_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
+
+    if (LEAD_STATUS_WEBHOOK_URL) {
+      try {
+        const webhookPayload = {
+          event: 'lead_status_changed',
+          lead: {
+            uuid: updatedLead.uuid,
+            id: updatedLead.id,
+            nome: updatedLead.nome,
+            telefone: updatedLead.telefone,
+            email: updatedLead.email,
+            previousStatus: previousStatus,
+            newStatus: status,
+            trava: updatedLead.trava
+          },
+          timestamp: new Date().toISOString(),
+          source: 'dashboard'
+        };
+
+        console.log('📤 Enviando webhook de mudança de status:', LEAD_STATUS_WEBHOOK_URL);
+        console.log('📦 Payload:', JSON.stringify(webhookPayload, null, 2));
+
+        const webhookResponse = await fetch(LEAD_STATUS_WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(webhookPayload)
+        });
+
+        const responseText = await webhookResponse.text();
+        console.log('📥 Resposta do webhook:', webhookResponse.status, responseText);
+
+        if (webhookResponse.ok) {
+          console.log('✅ Webhook de status enviado com sucesso');
+        } else {
+          console.error('❌ Erro ao enviar webhook de status:', webhookResponse.status, responseText);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao enviar webhook de status:', error.message);
+        // Não falha a requisição se o webhook falhar
+      }
+    }
 
     res.json(updatedLead);
   } catch (error) {

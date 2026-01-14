@@ -258,6 +258,62 @@ curl -X POST http://localhost:3001/api/webhook/message \
   }'
 ```
 
+## 🔔 Webhook de Mudança de Status (Kanban)
+
+Quando um lead é movido de coluna no Kanban, o sistema envia automaticamente um webhook para o n8n.
+
+### Configuração
+
+Adicione a variável de ambiente `LEAD_STATUS_WEBHOOK_URL` no seu `.env` ou nas configurações do Render:
+
+```env
+LEAD_STATUS_WEBHOOK_URL=https://seu-n8n.com/webhook/lead-status
+```
+
+Se não configurada, será usado o `N8N_WEBHOOK_URL` como fallback.
+
+### Payload do Webhook
+
+Quando um lead muda de status, o seguinte payload é enviado:
+
+```json
+{
+  "event": "lead_status_changed",
+  "lead": {
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "id": 123,
+    "nome": "João Silva",
+    "telefone": "+5511999887766",
+    "email": "joao@example.com",
+    "previousStatus": "novo",
+    "newStatus": "contato",
+    "trava": false
+  },
+  "timestamp": "2025-01-14T10:30:00.000Z",
+  "source": "dashboard"
+}
+```
+
+### Status Possíveis
+
+- `novo` - Novo lead
+- `contato` - Em contato
+- `negociacao` - Em negociação
+- `convertido` - Lead convertido (fechado)
+- `perdido` - Lead perdido
+
+### Exemplo de Workflow n8n
+
+```
+1. [Webhook] → Receber mudança de status
+   ↓
+2. [Switch] → Verificar qual status
+   ↓
+3a. Se "convertido" → Enviar mensagem de parabéns
+3b. Se "perdido" → Enviar pesquisa de satisfação
+3c. Se "contato" → Iniciar sequência de follow-up
+```
+
 ## 📝 Próximos Passos
 
 - [ ] Adicionar autenticação de usuários
@@ -266,6 +322,7 @@ curl -X POST http://localhost:3001/api/webhook/message \
 - [ ] Criar sistema de notificações
 - [ ] Adicionar suporte a arquivos/imagens
 - [ ] Implementar métricas e analytics
+- [x] Webhook de mudança de status no Kanban
 - [ ] Deploy em produção
 
 ## 📄 Licença
