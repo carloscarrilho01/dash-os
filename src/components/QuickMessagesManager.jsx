@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import './QuickMessagesManager.css';
 
+// Em produção, usa a mesma URL do site. Em desenvolvimento, usa localhost
+const API_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.MODE === 'production'
+    ? window.location.origin
+    : 'http://localhost:3001'
+);
+
 const CATEGORIES = [
   { value: 'general', label: 'Geral' },
   { value: 'greeting', label: 'Saudação' },
@@ -29,7 +36,7 @@ function QuickMessagesManager({ onClose }) {
 
   const loadQuickMessages = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/quick-messages');
+      const response = await fetch(`${API_URL}/api/quick-messages`);
       if (response.ok) {
         const data = await response.json();
         setQuickMessages(data);
@@ -51,8 +58,8 @@ function QuickMessagesManager({ onClose }) {
 
     try {
       const url = editingId
-        ? `http://localhost:3001/api/quick-messages/${editingId}`
-        : 'http://localhost:3001/api/quick-messages';
+        ? `${API_URL}/api/quick-messages/${editingId}`
+        : `${API_URL}/api/quick-messages`;
 
       const method = editingId ? 'PUT' : 'POST';
 
@@ -94,7 +101,7 @@ function QuickMessagesManager({ onClose }) {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/quick-messages/${id}`, {
+      const response = await fetch(`${API_URL}/api/quick-messages/${id}`, {
         method: 'DELETE'
       });
 
@@ -111,7 +118,7 @@ function QuickMessagesManager({ onClose }) {
 
   const handleToggleEnabled = async (qm) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/quick-messages/${qm.id}`, {
+      const response = await fetch(`${API_URL}/api/quick-messages/${qm.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

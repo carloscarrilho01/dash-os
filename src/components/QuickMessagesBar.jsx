@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import './QuickMessagesBar.css';
 
+// Em produção, usa a mesma URL do site. Em desenvolvimento, usa localhost
+const API_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.MODE === 'production'
+    ? window.location.origin
+    : 'http://localhost:3001'
+);
+
 function QuickMessagesBar({ onSelectMessage, onManage }) {
   const [quickMessages, setQuickMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +26,7 @@ function QuickMessagesBar({ onSelectMessage, onManage }) {
 
   const loadQuickMessages = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/quick-messages');
+      const response = await fetch(`${API_URL}/api/quick-messages`);
       if (response.ok) {
         const data = await response.json();
         setQuickMessages(data);
