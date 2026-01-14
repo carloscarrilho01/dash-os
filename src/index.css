@@ -4,12 +4,44 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* Cores principais - WhatsApp moderno */
+  --bg-primary: #0b141a;
+  --bg-secondary: #111b21;
+  --bg-tertiary: #202c33;
+  --bg-hover: #2a3942;
+
+  /* Cores de destaque */
+  --accent-primary: #00a884;
+  --accent-hover: #00c896;
+  --accent-active: #008f6f;
+
+  /* Cores de texto */
+  --text-primary: #e9edef;
+  --text-secondary: #8696a0;
+  --text-muted: #667781;
+
+  /* Cores de mensagens */
+  --msg-in-bg: #202c33;
+  --msg-out-bg: #005c4b;
+  --msg-agent-bg: #1e3a5f;
+
+  /* Bordas e sombras */
+  --border-color: #2a3942;
+  --shadow: rgba(0, 0, 0, 0.3);
+
+  /* Cores de status */
+  --success: #00a884;
+  --error: #ea4335;
+  --warning: #f9a825;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #111b21;
-  color: #e9edef;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 #root {
@@ -27,10 +59,11 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #374248;
+  background: var(--bg-hover);
   border-radius: 3px;
+  transition: background 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475259;
+  background: var(--text-muted);
 }
