@@ -67,10 +67,21 @@ function KanbanBoard({ socket }) {
       return
     }
 
-    try {
-      console.log('📤 Atualizando lead:', draggedLead.uuid, 'para status:', newStatus)
+    // Usa uuid se existir, senão usa telefone
+    const identifier = draggedLead.uuid || draggedLead.telefone
 
-      const response = await fetch(`${API_URL}/api/leads/${draggedLead.uuid}/status`, {
+    if (!identifier) {
+      console.error('❌ Lead sem identificador:', draggedLead)
+      alert('Erro: Lead sem identificador válido')
+      setDraggedLead(null)
+      return
+    }
+
+    try {
+      console.log('📤 Atualizando lead:', identifier, 'para status:', newStatus)
+      console.log('📦 Lead completo:', draggedLead)
+
+      const response = await fetch(`${API_URL}/api/leads/${identifier}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -81,9 +92,11 @@ function KanbanBoard({ socket }) {
       if (response.ok) {
         const updatedLead = await response.json()
         console.log('✅ Lead atualizado:', updatedLead)
-        setLeads(prev => prev.map(lead =>
-          lead.uuid === updatedLead.uuid ? updatedLead : lead
-        ))
+        setLeads(prev => prev.map(lead => {
+          const leadId = lead.uuid || lead.telefone
+          const updatedId = updatedLead.uuid || updatedLead.telefone
+          return leadId === updatedId ? updatedLead : lead
+        }))
       } else {
         const errorData = await response.json()
         console.error('❌ Erro na resposta:', response.status, errorData)
@@ -154,8 +167,8 @@ function KanbanBoard({ socket }) {
                 ) : (
                   columnLeads.map(lead => (
                     <div
-                      key={lead.uuid}
-                      className={`lead-card ${draggedLead?.uuid === lead.uuid ? 'dragging' : ''}`}
+                      key={lead.uuid || lead.telefone}
+                      className={`lead-card ${(draggedLead?.uuid || draggedLead?.telefone) === (lead.uuid || lead.telefone) ? 'dragging' : ''}`}
                       draggable
                       onDragStart={(e) => handleDragStart(e, lead)}
                     >
