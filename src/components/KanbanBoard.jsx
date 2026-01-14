@@ -135,6 +135,20 @@ function KanbanBoard({ socket }) {
     setShowAddLeadModal(false)
   }
 
+  // Calcula estatísticas
+  const getStatistics = () => {
+    const total = leads.length
+    const emAndamento = leads.filter(lead =>
+      ['contato', 'negociacao'].includes(lead.status)
+    ).length
+    const fechados = leads.filter(lead => lead.status === 'convertido').length
+    const taxaConversao = total > 0 ? ((fechados / total) * 100).toFixed(1) : '0.0'
+
+    return { total, emAndamento, fechados, taxaConversao }
+  }
+
+  const stats = getStatistics()
+
   if (loading) {
     return (
       <div className="kanban-loading">
@@ -148,16 +162,61 @@ function KanbanBoard({ socket }) {
     <div className="kanban-board">
       <div className="kanban-header">
         <h1>CRM - Kanban</h1>
-        <div className="kanban-stats">
-          <span className="stat-item">
-            <strong>{leads.length}</strong> Leads
-          </span>
-          <button className="add-lead-button" onClick={() => setShowAddLeadModal(true)}>
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <path fill="currentColor" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+        <button className="add-lead-button" onClick={() => setShowAddLeadModal(true)}>
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+          </svg>
+          Adicionar Lead
+        </button>
+      </div>
+
+      <div className="stats-cards">
+        <div className="stat-card">
+          <div className="stat-icon blue">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z" />
             </svg>
-            Adicionar Lead
-          </button>
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Total de Leads</div>
+            <div className="stat-value">{stats.total}</div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon yellow">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M13,2.05V5.08C16.39,5.57 19,8.47 19,12C19,12.9 18.82,13.75 18.5,14.54L21.12,16.07C21.68,14.83 22,13.45 22,12C22,6.82 18.05,2.55 13,2.05M12,19C8.13,19 5,15.87 5,12C5,8.47 7.61,5.57 11,5.08V2.05C5.94,2.55 2,6.81 2,12A10,10 0 0,0 12,22C15.3,22 18.23,20.39 20.05,17.91L17.45,16.38C16.17,18 14.21,19 12,19Z" />
+            </svg>
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Em Andamento</div>
+            <div className="stat-value">{stats.emAndamento}</div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon green">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" />
+            </svg>
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Fechados</div>
+            <div className="stat-value">{stats.fechados}</div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className={`stat-icon ${parseFloat(stats.taxaConversao) > 0 ? 'green' : 'red'}`}>
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z" />
+            </svg>
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Taxa de Conversão</div>
+            <div className="stat-value">{stats.taxaConversao}%</div>
+          </div>
         </div>
       </div>
 
