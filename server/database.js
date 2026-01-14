@@ -474,25 +474,45 @@ export const LeadDB = {
 
     try {
       console.log('🔍 Buscando lead com identificador:', identifier);
+      console.log('🔍 Tipo do identificador:', typeof identifier);
+
+      // Limpa o telefone de caracteres especiais se for telefone
+      const cleanIdentifier = String(identifier).replace(/\D/g, '');
+      console.log('🔍 Identificador limpo (sem caracteres especiais):', cleanIdentifier);
 
       // Tenta buscar por UUID primeiro, depois por telefone
       let query = supabase.from('leads').select('*');
 
-      // Se o identificador parece ser um UUID (tem hífens), busca por uuid
-      if (identifier.includes('-')) {
+      // Se o identificador parece ser um UUID (tem hífens e letras), busca por uuid
+      if (identifier.includes('-') && /[a-f]/.test(String(identifier).toLowerCase())) {
+        console.log('🔍 Buscando por UUID');
         query = query.eq('uuid', identifier);
       } else {
         // Caso contrário, busca por telefone
-        query = query.eq('telefone', identifier);
+        console.log('🔍 Buscando por telefone');
+        // Tenta com o valor original e com o valor limpo
+        query = query.or(`telefone.eq.${identifier},telefone.eq.${cleanIdentifier}`);
       }
 
-      const { data: existingLead, error: findError } = await query.single();
+      const { data: existingLead, error: findError } = await query.maybeSingle();
 
       if (findError) {
         console.error('❌ Erro ao buscar lead:', findError);
-        if (findError.code === 'PGRST116') {
-          console.error('Lead não encontrado no Supabase');
-        }
+        return null;
+      }
+
+      if (!existingLead) {
+        console.error('❌ Lead não encontrado no Supabase');
+        console.error('❌ Identificador buscado:', identifier);
+        console.error('❌ Identificador limpo:', cleanIdentifier);
+
+        // Lista todos os leads para debug
+        const { data: allLeads } = await supabase
+          .from('leads')
+          .select('uuid, telefone, nome')
+          .limit(10);
+        console.log('📋 Primeiros leads no banco:', allLeads);
+
         return null;
       }
 
@@ -524,6 +544,7 @@ export const LeadDB = {
       };
     } catch (error) {
       console.error('❌ Erro ao atualizar status do lead:', error);
+      console.error('Stack trace:', error.stack);
       return null;
     }
   }
