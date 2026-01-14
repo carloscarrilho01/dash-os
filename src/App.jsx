@@ -152,6 +152,7 @@ function App() {
       <ChatWindow
         conversation={selectedConversation}
         onSendMessage={handleSendMessage}
+        socket={socket}
       />
 
       {showNewConversationModal && (

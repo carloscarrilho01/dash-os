@@ -9,9 +9,17 @@ import CustomAudioPlayer from './CustomAudioPlayer'
 import './ChatWindow.css'
 import './FileUploader.css'
 
-function ChatWindow({ conversation, onSendMessage }) {
+const API_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.MODE === 'production'
+    ? window.location.origin
+    : 'http://localhost:3001'
+);
+
+function ChatWindow({ conversation, onSendMessage, socket }) {
   const [message, setMessage] = useState('')
   const [showManager, setShowManager] = useState(false)
+  const [isTravado, setIsTravado] = useState(false)
+  const [isTogglingTrava, setIsTogglingTrava] = useState(false)
   const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {
@@ -21,6 +29,61 @@ function ChatWindow({ conversation, onSendMessage }) {
   useEffect(() => {
     scrollToBottom()
   }, [conversation?.messages])
+
+  // Carrega status da trava quando a conversa muda
+  useEffect(() => {
+    if (conversation?.userId) {
+      fetchTravaStatus()
+    }
+  }, [conversation?.userId])
+
+  // Escuta atualizações de trava via WebSocket
+  useEffect(() => {
+    if (!socket) return
+
+    const handleTravaUpdate = (data) => {
+      if (data.userId === conversation?.userId) {
+        setIsTravado(data.trava)
+      }
+    }
+
+    socket.on('trava-updated', handleTravaUpdate)
+
+    return () => {
+      socket.off('trava-updated', handleTravaUpdate)
+    }
+  }, [socket, conversation?.userId])
+
+  const fetchTravaStatus = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/leads/${conversation.userId}/trava`)
+      const data = await response.json()
+      setIsTravado(data.trava)
+    } catch (error) {
+      console.error('Erro ao buscar status de trava:', error)
+    }
+  }
+
+  const toggleTrava = async () => {
+    if (isTogglingTrava) return
+
+    setIsTogglingTrava(true)
+    try {
+      const response = await fetch(`${API_URL}/api/leads/${conversation.userId}/toggle-trava`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+      setIsTravado(data.trava)
+    } catch (error) {
+      console.error('Erro ao alternar trava:', error)
+    } finally {
+      setIsTogglingTrava(false)
+    }
+  }
 
   const formatMessageTime = (timestamp) => {
     const date = new Date(timestamp)
@@ -99,6 +162,24 @@ function ChatWindow({ conversation, onSendMessage }) {
             <h3>{conversation.userName}</h3>
             <span className="user-id">ID: {conversation.userId}</span>
           </div>
+        </div>
+        <div className="chat-header-actions">
+          <button
+            className={`icon-button trava-button ${isTravado ? 'travado' : ''}`}
+            onClick={toggleTrava}
+            disabled={isTogglingTrava}
+            title={isTravado ? 'Agente pausado - Clique para retomar' : 'Agente ativo - Clique para pausar'}
+          >
+            {isTravado ? (
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M14,19H18V5H14M6,19H10V5H6V19Z" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 

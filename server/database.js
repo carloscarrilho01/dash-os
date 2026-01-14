@@ -350,3 +350,71 @@ export const QuickMessageDB = {
     }
   }
 };
+
+// Funções para Leads (controle de trava)
+export const LeadDB = {
+  async getTravaStatus(userId) {
+    if (!isConnected) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('trava')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') return false; // Lead não existe, considera não travado
+        throw error;
+      }
+
+      return data.trava || false;
+    } catch (error) {
+      console.error('Erro ao buscar status de trava:', error);
+      return false;
+    }
+  },
+
+  async setTrava(userId, travaValue) {
+    if (!isConnected) return false;
+
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .upsert({
+          user_id: userId,
+          trava: travaValue,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar trava:', error);
+      return false;
+    }
+  },
+
+  async toggleTrava(userId) {
+    if (!isConnected) return null;
+
+    try {
+      const currentStatus = await this.getTravaStatus(userId);
+      const newStatus = !currentStatus;
+
+      const success = await this.setTrava(userId, newStatus);
+
+      if (success) {
+        return newStatus;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Erro ao alternar trava:', error);
+      return null;
+    }
+  }
+};

@@ -4,7 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { connectDatabase, ConversationDB, QuickMessageDB } from './database.js';
+import { connectDatabase, ConversationDB, QuickMessageDB, LeadDB } from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -124,6 +124,16 @@ app.post('/api/webhook/message', async (req, res) => {
 
     if (!userId || !message) {
       return res.status(400).json({ error: 'userId e message são obrigatórios' });
+    }
+
+    // Verifica se o agente está travado (apenas para mensagens de usuários)
+    if (!isBot) {
+      const isTravado = await LeadDB.getTravaStatus(userId);
+      if (isTravado) {
+        console.log(`🔒 Agente TRAVADO para ${userId} - mensagem do usuário ignorada pelo bot`);
+        // Retorna sucesso mas não processa a mensagem para o bot
+        // A mensagem ainda é salva e exibida no dashboard
+      }
     }
 
     // Busca ou cria conversa
@@ -440,6 +450,45 @@ app.post('/api/conversations/new', async (req, res) => {
   } catch (error) {
     console.error('Erro ao criar nova conversa:', error);
     res.status(500).json({ error: 'Erro ao criar nova conversa' });
+  }
+});
+
+// ============================================
+// ENDPOINTS PARA CONTROLE DE TRAVA (LEADS)
+// ============================================
+
+// GET /api/leads/:userId/trava - Verifica status da trava
+app.get('/api/leads/:userId/trava', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const travaStatus = await LeadDB.getTravaStatus(userId);
+
+    res.json({ userId, trava: travaStatus });
+  } catch (error) {
+    console.error('Erro ao buscar status de trava:', error);
+    res.status(500).json({ error: 'Erro ao buscar status de trava' });
+  }
+});
+
+// POST /api/leads/:userId/toggle-trava - Alterna status da trava
+app.post('/api/leads/:userId/toggle-trava', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const newStatus = await LeadDB.toggleTrava(userId);
+
+    if (newStatus === null) {
+      return res.status(500).json({ error: 'Erro ao alternar trava' });
+    }
+
+    // Emite evento WebSocket para notificar todos os clientes
+    io.emit('trava-updated', { userId, trava: newStatus });
+
+    console.log(`🔒 Trava ${newStatus ? 'ATIVADA' : 'DESATIVADA'} para ${userId}`);
+
+    res.json({ userId, trava: newStatus });
+  } catch (error) {
+    console.error('Erro ao alternar trava:', error);
+    res.status(500).json({ error: 'Erro ao alternar trava' });
   }
 });
 
