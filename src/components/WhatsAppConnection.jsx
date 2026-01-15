@@ -49,9 +49,14 @@ function WhatsAppConnection({ socket }) {
     try {
       const response = await fetch(`${API_URL}/api/whatsapp/instances`)
       const data = await response.json()
-      setInstances(data.instances || [])
+      console.log('📋 Instâncias encontradas:', data)
+
+      // Evolution API retorna array diretamente ou dentro de um objeto
+      const instancesList = Array.isArray(data) ? data : (data.instances || [])
+      setInstances(instancesList)
     } catch (error) {
       console.error('Erro ao buscar instâncias:', error)
+      setError('Erro ao buscar instâncias. Verifique se o Evolution API está rodando.')
     }
   }
 
@@ -110,18 +115,36 @@ function WhatsAppConnection({ socket }) {
     setError('')
 
     try {
+      console.log(`🔌 Conectando instância: ${instance}`)
       const response = await fetch(`${API_URL}/api/whatsapp/instance/${instance}/connect`)
-      const data = await response.json()
 
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('❌ Erro na resposta:', errorData)
+        setError(errorData.error || 'Erro ao conectar')
+        setLoading(false)
+        return
+      }
+
+      const data = await response.json()
+      console.log('📱 Resposta do connect:', data)
+
+      // Evolution API pode retornar QR code em diferentes formatos
       if (data.qrcode) {
-        setQrCode(data.qrcode.code || data.qrcode)
+        const qrCodeData = data.qrcode.code || data.qrcode.base64 || data.qrcode
+        console.log('✅ QR Code recebido:', qrCodeData ? 'Sim' : 'Não')
+        setQrCode(qrCodeData)
         setConnectionStatus('qr')
       } else if (data.status === 'open') {
+        console.log('✅ Instância já conectada')
         setConnectionStatus('open')
         setQrCode(null)
+      } else {
+        console.log('⚠️ Resposta sem QR code ou status:', data)
+        setError('Resposta inesperada da API. Verifique o console.')
       }
     } catch (error) {
-      console.error('Erro ao conectar instância:', error)
+      console.error('❌ Erro ao conectar instância:', error)
       setError('Erro ao obter QR Code. Verifique a instância.')
     } finally {
       setLoading(false)
@@ -237,7 +260,13 @@ function WhatsAppConnection({ socket }) {
                 <div
                   key={instance.name}
                   className={`instance-card ${selectedInstance === instance.name ? 'selected' : ''}`}
-                  onClick={() => setSelectedInstance(instance.name)}
+                  onClick={() => {
+                    setSelectedInstance(instance.name)
+                    // Automaticamente tenta conectar e pegar o QR code
+                    if (instance.status !== 'open') {
+                      connectInstance(instance.name)
+                    }
+                  }}
                 >
                   <div className="instance-info">
                     <div className="instance-name">{instance.name}</div>
