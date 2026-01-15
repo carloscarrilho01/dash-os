@@ -12,9 +12,14 @@ function MobileNav({
   loading = false
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [menuTab, setMenuTab] = useState('conversations') // 'conversations' ou 'navigation'
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
+    // Quando abrir o menu, mostra conversas se estiver no chat, senão mostra navegação
+    if (!isMenuOpen) {
+      setMenuTab(currentView === 'chat' ? 'conversations' : 'navigation')
+    }
   }
 
   const handleNavigate = (view) => {
@@ -46,9 +51,6 @@ function MobileNav({
     if (!name) return '?'
     return name.substring(0, 2).toUpperCase()
   }
-
-  // Se estiver na view de chat, mostra lista de conversas
-  const showConversations = currentView === 'chat'
 
   return (
     <>
@@ -84,7 +86,7 @@ function MobileNav({
       {/* Menu Lateral */}
       <div className={`mobile-menu ${isMenuOpen ? 'open' : ''}`}>
         <div className="menu-header">
-          <h2>{showConversations ? 'Conversas' : 'Menu'}</h2>
+          <h2>Menu</h2>
           <button className="menu-close" onClick={toggleMenu}>
             <svg viewBox="0 0 24 24" width="24" height="24">
               <path fill="currentColor" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
@@ -92,7 +94,29 @@ function MobileNav({
           </button>
         </div>
 
-        {showConversations ? (
+        {/* Tabs de alternância */}
+        <div className="menu-tabs">
+          <button
+            className={`menu-tab ${menuTab === 'conversations' ? 'active' : ''}`}
+            onClick={() => setMenuTab('conversations')}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path fill="currentColor" d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M6,9H18V11H6M14,14H6V12H14M18,8H6V6H18" />
+            </svg>
+            <span>Conversas</span>
+          </button>
+          <button
+            className={`menu-tab ${menuTab === 'navigation' ? 'active' : ''}`}
+            onClick={() => setMenuTab('navigation')}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <path fill="currentColor" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" />
+            </svg>
+            <span>Navegação</span>
+          </button>
+        </div>
+
+        {menuTab === 'conversations' ? (
           /* Lista de Conversas */
           <div className="mobile-conversations">
             {loading ? (
@@ -190,21 +214,19 @@ function MobileNav({
           </nav>
         )}
 
-        {!showConversations && (
-          <div className="menu-footer">
-            <div className="menu-user">
-              <div className="user-avatar">
-                <svg viewBox="0 0 24 24" width="24" height="24">
-                  <path fill="currentColor" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" />
-                </svg>
-              </div>
-              <div className="user-info">
-                <span className="user-name">Admin</span>
-                <span className="user-status">Online</span>
-              </div>
+        <div className="menu-footer">
+          <div className="menu-user">
+            <div className="user-avatar">
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" />
+              </svg>
+            </div>
+            <div className="user-info">
+              <span className="user-name">Admin</span>
+              <span className="user-status">Online</span>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </>
   )
