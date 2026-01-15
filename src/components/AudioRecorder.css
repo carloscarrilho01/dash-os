@@ -341,3 +341,153 @@
 .audio-playing .audio-waveform-bar:nth-child(5) {
   animation-delay: 0.4s;
 }
+
+/* Responsividade Mobile */
+@media (max-width: 768px) {
+  /* Ajusta o container de gravação */
+  .audio-recording {
+    gap: 8px;
+    padding: 6px 10px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Reduz tamanho dos botões */
+  .btn-record-audio,
+  .btn-stop-recording,
+  .btn-cancel-recording {
+    padding: 6px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  /* Ajusta preview de áudio */
+  .audio-preview {
+    gap: 8px;
+    padding: 6px 10px;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+
+  /* Reduz tamanho do player */
+  .audio-player {
+    max-width: 180px;
+    height: 28px;
+    min-width: 150px;
+  }
+
+  /* Ajusta ações do preview */
+  .audio-preview-actions {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .btn-cancel,
+  .btn-send-audio {
+    padding: 6px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  /* Mensagem de áudio menor */
+  .message-audio {
+    min-width: 220px;
+    gap: 8px;
+  }
+
+  /* Botão play menor */
+  .audio-play-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+  }
+
+  .audio-play-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Informações de tempo menores */
+  .audio-time-info {
+    font-size: 10px;
+  }
+
+  .recording-time {
+    font-size: 13px;
+    min-width: 35px;
+  }
+
+  /* Dot de gravação menor */
+  .pulse-dot {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (max-width: 375px) {
+  /* Ajustes mais agressivos */
+  .audio-recording {
+    gap: 6px;
+    padding: 4px 8px;
+  }
+
+  .btn-record-audio,
+  .btn-stop-recording,
+  .btn-cancel-recording {
+    padding: 4px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .audio-preview {
+    gap: 6px;
+    padding: 4px 8px;
+  }
+
+  .audio-player {
+    max-width: 150px;
+    height: 26px;
+    min-width: 120px;
+  }
+
+  .btn-cancel,
+  .btn-send-audio {
+    padding: 4px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .message-audio {
+    min-width: 180px;
+    gap: 6px;
+  }
+
+  .audio-play-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+  }
+
+  .audio-play-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .audio-time-info {
+    font-size: 9px;
+  }
+
+  .recording-time {
+    font-size: 12px;
+    min-width: 30px;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .audio-duration {
+    font-size: 11px;
+  }
+}
