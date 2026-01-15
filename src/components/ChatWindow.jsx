@@ -15,12 +15,14 @@ const API_URL = import.meta.env.VITE_API_URL || (
     : 'http://localhost:3001'
 );
 
-function ChatWindow({ conversation, onSendMessage, socket }) {
+function ChatWindow({ conversation, onSendMessage, onLoadMoreMessages, socket }) {
   const [message, setMessage] = useState('')
   const [showManager, setShowManager] = useState(false)
   const [isTravado, setIsTravado] = useState(false)
   const [isTogglingTrava, setIsTogglingTrava] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -53,6 +55,40 @@ function ChatWindow({ conversation, onSendMessage, socket }) {
       socket.off('trava-updated', handleTravaUpdate)
     }
   }, [socket, conversation?.userId])
+
+  // Lazy loading: carrega mais mensagens ao rolar para o topo
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container || !onLoadMoreMessages) return
+
+    const handleScroll = async () => {
+      // Se está no topo (scrollTop < 100px) e tem mais mensagens para carregar
+      if (container.scrollTop < 100 && conversation?.hasMore && !isLoadingMore) {
+        setIsLoadingMore(true)
+
+        // Salva a posição de scroll atual e a altura do container
+        const previousScrollHeight = container.scrollHeight
+        const previousScrollTop = container.scrollTop
+
+        // Carrega mais mensagens
+        const loadedCount = await onLoadMoreMessages()
+
+        // Após carregar, mantém a posição visual (não pula para o topo)
+        if (loadedCount > 0) {
+          setTimeout(() => {
+            const newScrollHeight = container.scrollHeight
+            const scrollDifference = newScrollHeight - previousScrollHeight
+            container.scrollTop = previousScrollTop + scrollDifference
+          }, 0)
+        }
+
+        setIsLoadingMore(false)
+      }
+    }
+
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [conversation?.hasMore, conversation?.userId, isLoadingMore, onLoadMoreMessages])
 
   const fetchTravaStatus = async () => {
     try {
@@ -183,8 +219,14 @@ function ChatWindow({ conversation, onSendMessage, socket }) {
         </div>
       </div>
 
-      <div className="chat-messages">
+      <div className="chat-messages" ref={messagesContainerRef}>
         <div className="messages-container">
+          {isLoadingMore && (
+            <div className="loading-more-messages">
+              <div className="loading-spinner-small"></div>
+              <span>Carregando mensagens anteriores...</span>
+            </div>
+          )}
           {conversation.messages.map((msg) => (
             <div
               key={msg.id}

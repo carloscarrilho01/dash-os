@@ -68,7 +68,8 @@ function App() {
 
   const handleSelectConversation = async (conversation) => {
     try {
-      const response = await fetch(`${API_URL}/api/conversations/${conversation.userId}`)
+      // Carrega apenas as últimas 50 mensagens inicialmente
+      const response = await fetch(`${API_URL}/api/conversations/${conversation.userId}?limit=50&offset=0`)
       const data = await response.json()
       setSelectedConversation(data)
 
@@ -142,6 +143,31 @@ function App() {
     setSelectedConversation(newConversation)
   }
 
+  const handleLoadMoreMessages = async () => {
+    if (!selectedConversation || !selectedConversation.hasMore) return
+
+    try {
+      const currentMessageCount = selectedConversation.messages.length
+      const response = await fetch(
+        `${API_URL}/api/conversations/${selectedConversation.userId}?limit=50&offset=${currentMessageCount}`
+      )
+      const data = await response.json()
+
+      // Adiciona as mensagens mais antigas ao início do array
+      setSelectedConversation(prev => ({
+        ...prev,
+        messages: [...data.messages, ...prev.messages],
+        hasMore: data.hasMore,
+        totalMessages: data.totalMessages
+      }))
+
+      return data.messages.length
+    } catch (error) {
+      console.error('Erro ao carregar mais mensagens:', error)
+      return 0
+    }
+  }
+
   return (
     <div className="app">
       {currentView === 'chat' ? (
@@ -157,6 +183,7 @@ function App() {
           <ChatWindow
             conversation={selectedConversation}
             onSendMessage={handleSendMessage}
+            onLoadMoreMessages={handleLoadMoreMessages}
             socket={socket}
           />
         </>

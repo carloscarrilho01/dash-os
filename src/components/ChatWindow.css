@@ -268,3 +268,29 @@
 .send-button:not(:disabled) {
   color: var(--accent-primary);
 }
+
+/* Loading indicator for lazy loading */
+.loading-more-messages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.loading-spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--bg-hover);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

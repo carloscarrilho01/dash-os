@@ -196,6 +196,8 @@ app.get('/api/conversations', async (req, res) => {
 app.get('/api/conversations/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
+    const { limit = 50, offset = 0 } = req.query; // Paginação: últimas 50 mensagens por padrão
+
     const conversation = await getConversation(userId);
 
     if (!conversation) {
@@ -210,7 +212,19 @@ app.get('/api/conversations/:userId', async (req, res) => {
       conversations.set(userId, conversation);
     }
 
-    res.json(conversation);
+    // Aplica paginação nas mensagens (mais recentes primeiro)
+    const totalMessages = conversation.messages.length;
+    const startIndex = Math.max(0, totalMessages - parseInt(offset) - parseInt(limit));
+    const endIndex = totalMessages - parseInt(offset);
+
+    const paginatedConversation = {
+      ...conversation,
+      messages: conversation.messages.slice(startIndex, endIndex),
+      totalMessages,
+      hasMore: startIndex > 0
+    };
+
+    res.json(paginatedConversation);
   } catch (error) {
     console.error('Erro ao buscar conversa:', error);
     res.status(500).json({ error: 'Erro ao buscar conversa' });
