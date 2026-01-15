@@ -283,6 +283,7 @@
   height: 18px;
   color: var(--text-secondary);
   opacity: 0.7;
+  margin-right: 4px;
 }
 
 /* Diferentes estilos para mensagens de usuário/bot/agente */
@@ -363,8 +364,8 @@
 
   /* Ajusta preview de áudio */
   .audio-preview {
-    gap: 8px;
-    padding: 6px 10px;
+    gap: 10px;
+    padding: 8px 12px;
     flex-wrap: nowrap;
     width: 100%;
   }
@@ -378,8 +379,9 @@
 
   /* Ajusta ações do preview */
   .audio-preview-actions {
-    gap: 4px;
+    gap: 6px;
     flex-shrink: 0;
+    margin-left: 4px;
   }
 
   .btn-cancel,
@@ -440,8 +442,8 @@
   }
 
   .audio-preview {
-    gap: 6px;
-    padding: 4px 8px;
+    gap: 8px;
+    padding: 6px 10px;
   }
 
   .audio-player {
@@ -452,9 +454,9 @@
 
   .btn-cancel,
   .btn-send-audio {
-    padding: 4px;
-    min-width: 28px;
-    min-height: 28px;
+    padding: 5px;
+    min-width: 30px;
+    min-height: 30px;
   }
 
   .message-audio {
