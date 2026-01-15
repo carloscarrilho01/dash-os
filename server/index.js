@@ -995,18 +995,29 @@ async function evolutionApiRequest(endpoint, method = 'GET', body = null) {
     options.body = JSON.stringify(body);
   }
 
-  console.log(`🌐 Evolution API: ${method} ${endpoint}`);
+  console.log(`🌐 Evolution API: ${method} ${url}`);
+  console.log(`🔑 API Key: ${EVOLUTION_API_KEY ? 'Configurada (' + EVOLUTION_API_KEY.substring(0, 10) + '...)' : '❌ NÃO CONFIGURADA'}`);
 
   try {
     const response = await fetch(url, options);
+
+    // Verifica se a resposta é JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('❌ Resposta não é JSON. Content-Type:', contentType);
+      console.error('❌ Primeiros 200 caracteres:', text.substring(0, 200));
+      throw new Error(`Evolution API retornou ${contentType || 'HTML'} ao invés de JSON. Verifique:\n1. Se a URL está correta: ${EVOLUTION_API_URL}\n2. Se o Evolution API está rodando\n3. Se a API Key está configurada corretamente`);
+    }
+
     const data = await response.json();
 
     if (!response.ok) {
       console.error('❌ Evolution API Error:', data);
-      throw new Error(data.message || 'Evolution API request failed');
+      throw new Error(data.message || `Evolution API request failed (${response.status})`);
     }
 
-    console.log('✅ Evolution API Response:', data);
+    console.log('✅ Evolution API Response:', JSON.stringify(data).substring(0, 200) + '...');
     return data;
   } catch (error) {
     console.error('❌ Erro ao chamar Evolution API:', error.message);
