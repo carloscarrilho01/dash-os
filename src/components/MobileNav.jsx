@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import './MobileNav.css'
 
 function MobileNav({
@@ -11,6 +12,7 @@ function MobileNav({
   onSelectConversation = () => {},
   loading = false
 }) {
+  const { signOut } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [menuTab, setMenuTab] = useState('conversations') // 'conversations' ou 'navigation'
 
@@ -214,6 +216,16 @@ function MobileNav({
                 <path fill="currentColor" d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M11,13H9V11H7V9H9V7H11V9H13V11H11V13Z" />
               </svg>
               <span>Nova Conversa</span>
+            </button>
+
+            <button
+              className="menu-item logout-item"
+              onClick={signOut}
+            >
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z" />
+              </svg>
+              <span>Sair</span>
             </button>
           </nav>
         )}

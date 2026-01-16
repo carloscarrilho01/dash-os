@@ -72,6 +72,11 @@
   box-shadow: 0 2px 8px rgba(224, 224, 224, 0.3);
 }
 
+.logout-btn:hover {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
 .sidebar-search {
   padding: 12px;
   background: var(--bg-secondary);
