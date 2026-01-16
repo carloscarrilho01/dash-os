@@ -474,7 +474,8 @@
   .chat-window,
   .kanban-board-container,
   .analytics-container,
-  .whatsapp-connection-container {
+  .whatsapp-connection-container,
+  .product-stock-container {
     padding-bottom: 70px;
   }
 }

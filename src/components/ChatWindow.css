@@ -307,15 +307,16 @@
 
 /* Responsividade Mobile */
 @media (max-width: 768px) {
-  /* Ajusta chat window para compensar header mobile */
+  /* Ajusta chat window para mobile */
   .chat-window {
-    padding-top: 60px;
+    padding-top: 0;
+    padding-bottom: 70px;
   }
 
-  /* Ajusta header do chat para ficar abaixo do header mobile */
+  /* Ajusta header do chat para ficar no topo */
   .chat-header {
     position: fixed;
-    top: 60px;
+    top: 0;
     left: 0;
     right: 0;
     z-index: 99;
@@ -324,6 +325,7 @@
   /* Ajusta a área de mensagens */
   .chat-messages {
     padding-top: 60px; /* Compensa o header fixo */
+    padding-bottom: 0;
   }
 
   /* Ajusta tamanhos de fonte */
@@ -345,11 +347,12 @@
 
 @media (max-width: 375px) {
   .chat-window {
-    padding-top: 56px;
+    padding-top: 0;
+    padding-bottom: 65px;
   }
 
   .chat-header {
-    top: 56px;
+    top: 0;
     padding: 8px 12px;
   }
 

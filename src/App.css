@@ -36,7 +36,8 @@
 
 .crm-nav,
 .analytics-nav,
-.whatsapp-nav {
+.whatsapp-nav,
+.stock-nav {
   width: 100%;
   background: var(--bg-tertiary);
   padding: 16px 24px;
@@ -47,7 +48,8 @@
 }
 
 .analytics-view,
-.whatsapp-view {
+.whatsapp-view,
+.stock-view {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -105,25 +107,34 @@
 
 /* Responsividade Mobile */
 @media (max-width: 768px) {
+  .app {
+    display: block;
+  }
+
   /* Esconde os botões de navegação desktop em mobile */
   .crm-nav,
   .analytics-nav,
-  .whatsapp-nav {
+  .whatsapp-nav,
+  .stock-nav {
     display: none;
   }
 
-  /* Ajusta views para compensar header mobile */
+  /* Ajusta views para compensar bottom nav mobile */
   .crm-view,
   .analytics-view,
-  .whatsapp-view {
-    padding-top: 60px;
+  .whatsapp-view,
+  .stock-view {
+    padding-top: 0;
+    padding-bottom: 70px;
   }
 }
 
 @media (max-width: 375px) {
   .crm-view,
   .analytics-view,
-  .whatsapp-view {
-    padding-top: 56px;
+  .whatsapp-view,
+  .stock-view {
+    padding-top: 0;
+    padding-bottom: 65px;
   }
 }

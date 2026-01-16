@@ -3,7 +3,7 @@ import { ptBR } from 'date-fns/locale'
 import { useAuth } from '../contexts/AuthContext'
 import './Sidebar.css'
 
-function Sidebar({ conversations, selectedConversation, onSelectConversation, loading, onNewConversation, onNavigateToCRM, onNavigateToAnalytics, onNavigateToWhatsApp }) {
+function Sidebar({ conversations, selectedConversation, onSelectConversation, loading, onNewConversation, onNavigateToCRM, onNavigateToAnalytics, onNavigateToWhatsApp, onNavigateToStock }) {
   const { signOut } = useAuth()
   const formatTime = (timestamp) => {
     try {
@@ -46,6 +46,15 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
           >
             <svg viewBox="0 0 24 24" width="24" height="24">
               <path fill="currentColor" d="M3,3H11V11H3V3M13,3H21V11H13V3M3,13H11V21H3V13M13,13H21V21H13V13Z" />
+            </svg>
+          </button>
+          <button
+            className="icon-button stock-btn"
+            onClick={onNavigateToStock}
+            title="Estoque de Produtos"
+          >
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path fill="currentColor" d="M19,18H6V8H19M19,6H6V4H19M3,14H4V20H20V14H21V20A1,1 0 0,1 20,21H4A1,1 0 0,1 3,20V14M16,8V10H14V12H12V10H10V8H12V6H14V8H16Z" />
             </svg>
           </button>
           <button
