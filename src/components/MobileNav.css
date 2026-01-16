@@ -8,8 +8,8 @@
   left: 0;
   right: 0;
   height: 60px;
-  background: #1e1e2e;
-  border-bottom: 1px solid #2d2d3d;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--bg-hover);
   padding: 0 16px;
   align-items: center;
   justify-content: space-between;
@@ -19,7 +19,7 @@
 .menu-toggle {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -30,13 +30,13 @@
 }
 
 .menu-toggle:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
 }
 
 .mobile-title {
   font-size: 18px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
   flex: 1;
   text-align: center;
@@ -45,7 +45,7 @@
 .mobile-new-chat {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -56,7 +56,7 @@
 }
 
 .mobile-new-chat:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
 }
 
 /* Overlay - fecha o menu ao clicar fora */
@@ -90,8 +90,8 @@
   bottom: 0;
   width: 280px;
   max-width: 85vw;
-  background: #1e1e2e;
-  border-right: 1px solid #2d2d3d;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--bg-hover);
   z-index: 999;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
@@ -109,20 +109,20 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px;
-  border-bottom: 1px solid #2d2d3d;
+  border-bottom: 1px solid var(--bg-hover);
 }
 
 .menu-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .menu-close {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -133,7 +133,7 @@
 }
 
 .menu-close:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-hover);
 }
 
 /* Tabs de alternância */
@@ -141,8 +141,8 @@
   display: flex;
   gap: 8px;
   padding: 12px 16px;
-  border-bottom: 1px solid #2d2d3d;
-  background: #1a1a28;
+  border-bottom: 1px solid var(--bg-hover);
+  background: var(--bg-secondary);
 }
 
 .menu-tab {
@@ -153,9 +153,9 @@
   gap: 8px;
   padding: 10px 16px;
   background: transparent;
-  border: 1px solid #2d2d3d;
+  border: 1px solid var(--bg-hover);
   border-radius: 8px;
-  color: #a0a0b0;
+  color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -163,15 +163,15 @@
 }
 
 .menu-tab:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: #8a2be2;
-  color: #fff;
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
 }
 
 .menu-tab.active {
-  background: rgba(138, 43, 226, 0.15);
-  border-color: #8a2be2;
-  color: #fff;
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
 }
 
 .menu-tab svg {
@@ -186,33 +186,33 @@
 .mobile-conversations {
   flex: 1;
   overflow-y: auto;
-  background: #1e1e2e;
+  background: var(--bg-secondary);
 }
 
 .mobile-conversations .loading,
 .mobile-conversations .empty-state {
   padding: 60px 20px;
   text-align: center;
-  color: #a0a0b0;
+  color: var(--text-secondary);
 }
 
 .mobile-conversations .empty-state p {
   font-size: 16px;
   margin-bottom: 8px;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .mobile-conversations .empty-state small {
   font-size: 13px;
-  color: #a0a0b0;
+  color: var(--text-secondary);
 }
 
 .mobile-conversations .conversation-item {
   display: flex;
   padding: 14px 16px;
   cursor: pointer;
-  border-bottom: 1px solid #2d2d3d;
+  border-bottom: 1px solid var(--bg-hover);
   transition: all 0.2s ease;
   gap: 12px;
   position: relative;
@@ -225,17 +225,17 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: #8a2be2;
+  background: var(--accent-primary);
   transform: scaleY(0);
   transition: transform 0.2s ease;
 }
 
 .mobile-conversations .conversation-item:hover {
-  background: #2d2d3d;
+  background: var(--bg-hover);
 }
 
 .mobile-conversations .conversation-item.active {
-  background: rgba(138, 43, 226, 0.1);
+  background: var(--bg-hover);
 }
 
 .mobile-conversations .conversation-item.active::before {
@@ -247,11 +247,11 @@
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3a3a3a, #505050);
+  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
@@ -275,7 +275,7 @@
 .mobile-conversations .conversation-name {
   font-size: 16px;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -284,13 +284,13 @@
 
 .mobile-conversations .conversation-time {
   font-size: 12px;
-  color: #a0a0b0;
+  color: var(--text-secondary);
   flex-shrink: 0;
   font-weight: 500;
 }
 
 .mobile-conversations .conversation-item.active .conversation-time {
-  color: #8a2be2;
+  color: var(--accent-primary);
 }
 
 .mobile-conversations .conversation-preview {
@@ -302,7 +302,7 @@
 
 .mobile-conversations .last-message {
   font-size: 14px;
-  color: #a0a0b0;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -310,8 +310,8 @@
 }
 
 .mobile-conversations .unread-badge {
-  background: #fff;
-  color: #1e1e2e;
+  background: var(--text-primary);
+  color: var(--bg-primary);
   font-size: 11px;
   font-weight: 700;
   padding: 3px 8px;
@@ -330,7 +330,7 @@
 
 .menu-divider {
   height: 1px;
-  background: #2d2d3d;
+  background: var(--bg-hover);
   margin: 8px 0;
 }
 
@@ -343,7 +343,7 @@
   border-radius: 12px;
   background: transparent;
   border: none;
-  color: #a0a0b0;
+  color: var(--text-secondary);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -353,13 +353,13 @@
 }
 
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .menu-item.active {
-  background: rgba(138, 43, 226, 0.15);
-  color: #fff;
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .menu-item svg {
@@ -377,7 +377,7 @@
 
 /* Footer do Menu - usuário */
 .menu-footer {
-  border-top: 1px solid #2d2d3d;
+  border-top: 1px solid var(--bg-hover);
   padding: 16px;
 }
 
@@ -387,24 +387,24 @@
   gap: 12px;
   padding: 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-tertiary);
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .menu-user:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
 }
 
 .menu-user-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--bg-hover);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 16px;
   flex-shrink: 0;
@@ -418,7 +418,7 @@
 .menu-user-name {
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 2px 0;
   white-space: nowrap;
   overflow: hidden;
@@ -427,7 +427,7 @@
 
 .menu-user-email {
   font-size: 12px;
-  color: #a0a0b0;
+  color: var(--text-secondary);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
