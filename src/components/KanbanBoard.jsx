@@ -1,13 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import { API_URL } from '../config/api'
 import AddLeadModal from './AddLeadModal'
 import EditLeadModal from './EditLeadModal'
 import './KanbanBoard.css'
-
-const API_URL = import.meta.env.VITE_API_URL || (
-  import.meta.env.MODE === 'production'
-    ? window.location.origin
-    : 'http://localhost:3001'
-);
 
 const COLUMNS = [
   { id: 'novo', title: 'Novo', color: '#6c757d' },
@@ -32,34 +27,7 @@ function KanbanBoard({ socket }) {
   const [currentTouchX, setCurrentTouchX] = useState(null)
   const [currentTouchY, setCurrentTouchY] = useState(null)
 
-  useEffect(() => {
-    fetchLeads()
-
-    // Escuta atualizações de leads via WebSocket
-    if (socket) {
-      socket.on('lead-updated', (updatedLead) => {
-        setLeads(prev => prev.map(lead =>
-          lead.uuid === updatedLead.uuid ? updatedLead : lead
-        ))
-      })
-
-      socket.on('lead-created', (newLead) => {
-        setLeads(prev => [newLead, ...prev])
-      })
-
-      socket.on('lead-deleted', ({ uuid }) => {
-        setLeads(prev => prev.filter(lead => lead.uuid !== uuid))
-      })
-
-      return () => {
-        socket.off('lead-updated')
-        socket.off('lead-created')
-        socket.off('lead-deleted')
-      }
-    }
-  }, [socket])
-
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/api/leads`)
       const data = await response.json()
@@ -69,19 +37,50 @@ function KanbanBoard({ socket }) {
       console.error('Erro ao carregar leads:', error)
       setLoading(false)
     }
-  }
+  }, [])
 
-  const handleDragStart = (e, lead) => {
+  const handleLeadUpdated = useCallback((updatedLead) => {
+    setLeads(prev => prev.map(lead =>
+      lead.uuid === updatedLead.uuid ? updatedLead : lead
+    ))
+  }, [])
+
+  const handleLeadCreatedSocket = useCallback((newLead) => {
+    setLeads(prev => [newLead, ...prev])
+  }, [])
+
+  const handleLeadDeletedSocket = useCallback(({ uuid }) => {
+    setLeads(prev => prev.filter(lead => lead.uuid !== uuid))
+  }, [])
+
+  useEffect(() => {
+    fetchLeads()
+
+    // Escuta atualizações de leads via WebSocket
+    if (socket) {
+      socket.on('lead-updated', handleLeadUpdated)
+      socket.on('lead-created', handleLeadCreatedSocket)
+      socket.on('lead-deleted', handleLeadDeletedSocket)
+
+      return () => {
+        socket.off('lead-updated', handleLeadUpdated)
+        socket.off('lead-created', handleLeadCreatedSocket)
+        socket.off('lead-deleted', handleLeadDeletedSocket)
+      }
+    }
+  }, [socket, fetchLeads, handleLeadUpdated, handleLeadCreatedSocket, handleLeadDeletedSocket])
+
+  const handleDragStart = useCallback((e, lead) => {
     setDraggedLead(lead)
     e.dataTransfer.effectAllowed = 'move'
-  }
+  }, [])
 
-  const handleDragOver = (e) => {
+  const handleDragOver = useCallback((e) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-  }
+  }, [])
 
-  const handleDrop = async (e, newStatus) => {
+  const handleDrop = useCallback(async (e, newStatus) => {
     e.preventDefault()
 
     if (!draggedLead || draggedLead.status === newStatus) {
@@ -130,18 +129,18 @@ function KanbanBoard({ socket }) {
     }
 
     setDraggedLead(null)
-  }
+  }, [draggedLead])
 
   // Touch handlers for mobile drag and drop
-  const handleTouchStart = (e, lead) => {
+  const handleTouchStart = useCallback((e, lead) => {
     const touch = e.touches[0]
     setTouchStartY(touch.clientY)
     setTouchStartX(touch.clientX)
     setDraggedLead(lead)
     setIsDraggingTouch(false)
-  }
+  }, [])
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = useCallback((e) => {
     if (!draggedLead || touchStartY === null) return
 
     const touch = e.touches[0]
@@ -155,9 +154,9 @@ function KanbanBoard({ socket }) {
       setCurrentTouchY(touch.clientY)
       e.preventDefault() // Previne scroll enquanto arrasta
     }
-  }
+  }, [draggedLead, touchStartY, touchStartX])
 
-  const handleTouchEnd = async (e) => {
+  const handleTouchEnd = useCallback(async (e) => {
     if (!draggedLead || !isDraggingTouch) {
       // Se não estava arrastando, pode ser um click
       setDraggedLead(null)
@@ -249,47 +248,47 @@ function KanbanBoard({ socket }) {
     setTouchStartX(null)
     setCurrentTouchX(null)
     setCurrentTouchY(null)
-  }
+  }, [draggedLead, isDraggingTouch, currentTouchX, currentTouchY])
 
-  const getLeadsByStatus = (status) => {
+  const getLeadsByStatus = useCallback((status) => {
     return leads.filter(lead => (lead.status || 'novo') === status)
-  }
+  }, [leads])
 
-  const formatPhoneNumber = (phone) => {
+  const formatPhoneNumber = useCallback((phone) => {
     if (!phone) return 'Sem telefone'
     const cleaned = phone.replace(/\D/g, '')
     if (cleaned.length === 13) {
       return `+${cleaned.slice(0, 2)} (${cleaned.slice(2, 4)}) ${cleaned.slice(4, 9)}-${cleaned.slice(9)}`
     }
     return phone
-  }
+  }, [])
 
-  const handleLeadCreated = (newLead) => {
+  const handleLeadCreated = useCallback((newLead) => {
     setLeads(prev => [newLead, ...prev])
     setShowAddLeadModal(false)
-  }
+  }, [])
 
-  const handleLeadClick = (lead) => {
+  const handleLeadClick = useCallback((lead) => {
     setSelectedLead(lead)
     setShowEditLeadModal(true)
-  }
+  }, [])
 
-  const handleLeadUpdated = (updatedLead) => {
+  const handleLeadUpdatedModal = useCallback((updatedLead) => {
     setLeads(prev => prev.map(lead =>
       lead.uuid === updatedLead.uuid ? updatedLead : lead
     ))
     setShowEditLeadModal(false)
     setSelectedLead(null)
-  }
+  }, [])
 
-  const handleLeadDeleted = (deletedLead) => {
+  const handleLeadDeleted = useCallback((deletedLead) => {
     setLeads(prev => prev.filter(lead => lead.uuid !== deletedLead.uuid))
     setShowEditLeadModal(false)
     setSelectedLead(null)
-  }
+  }, [])
 
   // Calcula estatísticas
-  const getStatistics = () => {
+  const getStatistics = useMemo(() => {
     const total = leads.length
     const emAndamento = leads.filter(lead =>
       ['agendado', 'compareceu', 'servico_finalizado'].includes(lead.status)
@@ -298,9 +297,9 @@ function KanbanBoard({ socket }) {
     const taxaConversao = total > 0 ? ((fechados / total) * 100).toFixed(1) : '0.0'
 
     return { total, emAndamento, fechados, taxaConversao }
-  }
+  }, [leads])
 
-  const stats = getStatistics()
+  const stats = getStatistics
 
   if (loading) {
     return (
@@ -468,7 +467,7 @@ function KanbanBoard({ socket }) {
             setShowEditLeadModal(false)
             setSelectedLead(null)
           }}
-          onLeadUpdated={handleLeadUpdated}
+          onLeadUpdated={handleLeadUpdatedModal}
           onLeadDeleted={handleLeadDeleted}
         />
       )}
@@ -476,4 +475,4 @@ function KanbanBoard({ socket }) {
   )
 }
 
-export default KanbanBoard
+export default memo(KanbanBoard)

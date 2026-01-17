@@ -1,11 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
+import { API_URL } from '../config/api'
 import './WhatsAppConnection.css'
-
-const API_URL = import.meta.env.VITE_API_URL || (
-  import.meta.env.MODE === 'production'
-    ? window.location.origin
-    : 'http://localhost:3001'
-);
 
 function WhatsAppConnection({ socket }) {
   const [instances, setInstances] = useState([])
@@ -20,34 +15,7 @@ function WhatsAppConnection({ socket }) {
   const [searchNumber, setSearchNumber] = useState('')
   const [searching, setSearching] = useState(false)
 
-  useEffect(() => {
-    fetchInstances()
-
-    // Escuta eventos de status via WebSocket
-    if (socket) {
-      socket.on('whatsapp-status', (data) => {
-        if (data.instance === selectedInstance) {
-          setConnectionStatus(data.status)
-          if (data.status === 'open') {
-            setQrCode(null) // Remove QR code quando conectar
-          }
-        }
-      })
-
-      socket.on('whatsapp-qr', (data) => {
-        if (data.instance === selectedInstance) {
-          setQrCode(data.qr)
-        }
-      })
-
-      return () => {
-        socket.off('whatsapp-status')
-        socket.off('whatsapp-qr')
-      }
-    }
-  }, [socket, selectedInstance])
-
-  const fetchInstances = async () => {
+  const fetchInstances = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/api/whatsapp/instances`)
       const data = await response.json()
@@ -60,9 +28,9 @@ function WhatsAppConnection({ socket }) {
       console.error('Erro ao buscar instâncias:', error)
       setError('Erro ao buscar instâncias. Verifique se o Evolution API está rodando.')
     }
-  }
+  }, [])
 
-  const createInstance = async () => {
+  const createInstance = useCallback(async () => {
     if (!newInstanceName.trim()) {
       setError('Nome da instância é obrigatório')
       return
@@ -107,9 +75,9 @@ function WhatsAppConnection({ socket }) {
     } finally {
       setCreating(false)
     }
-  }
+  }, [newInstanceName])
 
-  const connectInstance = async (instanceName) => {
+  const connectInstance = useCallback(async (instanceName) => {
     const instance = instanceName || selectedInstance
     if (!instance) return
 
@@ -151,9 +119,9 @@ function WhatsAppConnection({ socket }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedInstance])
 
-  const disconnectInstance = async () => {
+  const disconnectInstance = useCallback(async () => {
     if (!selectedInstance) return
 
     setLoading(true)
@@ -173,9 +141,9 @@ function WhatsAppConnection({ socket }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedInstance])
 
-  const deleteInstance = async (instanceName) => {
+  const deleteInstance = useCallback(async (instanceName) => {
     if (!confirm(`Tem certeza que deseja excluir a instância "${instanceName}"?`)) {
       return
     }
@@ -197,9 +165,9 @@ function WhatsAppConnection({ socket }) {
       console.error('Erro ao excluir instância:', error)
       setError('Erro ao excluir instância.')
     }
-  }
+  }, [selectedInstance])
 
-  const searchByNumber = async () => {
+  const searchByNumber = useCallback(async () => {
     if (!searchNumber.trim()) {
       setError('Digite um número para buscar')
       return
@@ -240,9 +208,9 @@ function WhatsAppConnection({ socket }) {
     } finally {
       setSearching(false)
     }
-  }
+  }, [searchNumber, connectInstance])
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = useCallback((status) => {
     const statusMap = {
       'open': { label: 'Conectado', color: '#2ecc71' },
       'qr': { label: 'Aguardando QR', color: '#f39c12' },
@@ -261,7 +229,36 @@ function WhatsAppConnection({ socket }) {
         {statusInfo.label}
       </span>
     )
-  }
+  }, [])
+
+  const handleWhatsAppStatus = useCallback((data) => {
+    if (data.instance === selectedInstance) {
+      setConnectionStatus(data.status)
+      if (data.status === 'open') {
+        setQrCode(null)
+      }
+    }
+  }, [selectedInstance])
+
+  const handleWhatsAppQr = useCallback((data) => {
+    if (data.instance === selectedInstance) {
+      setQrCode(data.qr)
+    }
+  }, [selectedInstance])
+
+  useEffect(() => {
+    fetchInstances()
+
+    if (socket) {
+      socket.on('whatsapp-status', handleWhatsAppStatus)
+      socket.on('whatsapp-qr', handleWhatsAppQr)
+
+      return () => {
+        socket.off('whatsapp-status', handleWhatsAppStatus)
+        socket.off('whatsapp-qr', handleWhatsAppQr)
+      }
+    }
+  }, [socket, fetchInstances, handleWhatsAppStatus, handleWhatsAppQr])
 
   return (
     <div className="whatsapp-connection">
@@ -501,4 +498,4 @@ function WhatsAppConnection({ socket }) {
   )
 }
 
-export default WhatsAppConnection
+export default memo(WhatsAppConnection)

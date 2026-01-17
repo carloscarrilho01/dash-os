@@ -1,13 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import { API_URL } from '../config/api'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import './ProductStock.css'
-
-const API_URL = import.meta.env.VITE_API_URL || (
-  import.meta.env.MODE === 'production'
-    ? window.location.origin
-    : 'http://localhost:3001'
-)
 
 function ProductStock() {
   const { user } = useAuth()
@@ -30,14 +25,7 @@ function ProductStock() {
     supplier: ''
   })
 
-  // Carregar produtos do Supabase
-  useEffect(() => {
-    if (user) {
-      fetchProducts()
-    }
-  }, [user])
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error } = await supabase
@@ -54,14 +42,20 @@ function ProductStock() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
-  const handleInputChange = (e) => {
+  useEffect(() => {
+    if (user) {
+      fetchProducts()
+    }
+  }, [user, fetchProducts])
+
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  }, [])
 
-  const sendProductWebhook = async (product, action) => {
+  const sendProductWebhook = useCallback(async (product, action) => {
     try {
       const webhookPayload = {
         event: action === 'create' ? 'product_created' : 'product_updated',
@@ -100,9 +94,9 @@ function ProductStock() {
       console.error('❌ Erro ao enviar webhook de produto:', error)
       // Não falha a operação se o webhook falhar
     }
-  }
+  }, [user])
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault()
     setSaving(true)
 
@@ -172,9 +166,9 @@ function ProductStock() {
     } finally {
       setSaving(false)
     }
-  }
+  }, [editingProduct, formData, user, sendProductWebhook, fetchProducts])
 
-  const handleEdit = (product) => {
+  const handleEdit = useCallback((product) => {
     setEditingProduct(product)
     setFormData({
       name: product.name,
@@ -188,9 +182,9 @@ function ProductStock() {
       supplier: product.supplier || ''
     })
     setShowModal(true)
-  }
+  }, [])
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (!window.confirm('Tem certeza que deseja excluir este produto?')) {
       return
     }
@@ -208,9 +202,9 @@ function ProductStock() {
       console.error('Erro ao excluir produto:', error.message)
       alert('Erro ao excluir produto: ' + error.message)
     }
-  }
+  }, [user, fetchProducts])
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       name: '',
       sku: '',
@@ -224,26 +218,26 @@ function ProductStock() {
     })
     setEditingProduct(null)
     setShowModal(false)
-  }
+  }, [])
 
   // Filtrar produtos
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = useMemo(() => products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.sku.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = filterCategory === 'all' || product.category === filterCategory
     return matchesSearch && matchesCategory
-  })
+  }), [products, searchTerm, filterCategory])
 
   // Categorias únicas
-  const categories = [...new Set(products.map(p => p.category))].filter(Boolean)
+  const categories = useMemo(() => [...new Set(products.map(p => p.category))].filter(Boolean), [products])
 
   // Estatísticas
-  const stats = {
+  const stats = useMemo(() => ({
     total: products.length,
     lowStock: products.filter(p => parseInt(p.stock) <= parseInt(p.min_stock || p.minStock || 0)).length,
     outOfStock: products.filter(p => parseInt(p.stock) === 0).length,
     totalValue: products.reduce((sum, p) => sum + (parseFloat(p.price) * parseInt(p.stock)), 0)
-  }
+  }), [products])
 
   return (
     <div className="product-stock-container">
@@ -581,4 +575,4 @@ function ProductStock() {
   )
 }
 
-export default ProductStock
+export default memo(ProductStock)

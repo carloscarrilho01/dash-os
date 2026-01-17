@@ -1,20 +1,18 @@
-import { formatDistanceToNow } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { memo, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { formatConversationTime } from '../utils/dateFormatters'
 import './Sidebar.css'
 
 function Sidebar({ conversations, selectedConversation, onSelectConversation, loading, onNewConversation, onNavigateToCRM, onNavigateToAnalytics, onNavigateToWhatsApp, onNavigateToStock }) {
   const { signOut } = useAuth()
-  const formatTime = (timestamp) => {
+
+  const formatTime = useCallback((timestamp) => {
     try {
-      return formatDistanceToNow(new Date(timestamp), {
-        addSuffix: true,
-        locale: ptBR
-      })
+      return formatConversationTime(timestamp)
     } catch {
       return ''
     }
-  }
+  }, [])
 
   return (
     <div className="sidebar">
@@ -132,4 +130,4 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
   )
 }
 
-export default Sidebar
+export default memo(Sidebar)

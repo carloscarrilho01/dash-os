@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback, memo } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import './MobileNav.css'
 
@@ -16,29 +16,29 @@ function MobileNav({
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [menuTab, setMenuTab] = useState('conversations') // 'conversations' ou 'navigation'
 
-  const toggleMenu = () => {
+  const toggleMenu = useCallback(() => {
     setIsMenuOpen(!isMenuOpen)
     // Quando abrir o menu, mostra conversas se estiver no chat, senão mostra navegação
     if (!isMenuOpen) {
       setMenuTab(currentView === 'chat' ? 'conversations' : 'navigation')
     }
-  }
+  }, [isMenuOpen, currentView])
 
-  const handleNavigate = (view) => {
+  const handleNavigate = useCallback((view) => {
     onNavigate(view)
     setIsMenuOpen(false)
-  }
+  }, [onNavigate])
 
-  const handleSelectConversation = (conversation) => {
+  const handleSelectConversation = useCallback((conversation) => {
     onSelectConversation(conversation)
     // Se não estiver na view de chat, navega para lá
     if (currentView !== 'chat') {
       onNavigate('chat')
     }
     setIsMenuOpen(false)
-  }
+  }, [onSelectConversation, currentView, onNavigate])
 
-  const formatTime = (timestamp) => {
+  const formatTime = useCallback((timestamp) => {
     const date = new Date(timestamp)
     const now = new Date()
     const diff = now - date
@@ -51,12 +51,12 @@ function MobileNav({
     } else {
       return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
     }
-  }
+  }, [])
 
-  const getInitials = (name) => {
+  const getInitials = useCallback((name) => {
     if (!name) return '?'
     return name.substring(0, 2).toUpperCase()
-  }
+  }, [])
 
   return (
     <>
@@ -278,4 +278,4 @@ function MobileNav({
   )
 }
 
-export default MobileNav
+export default memo(MobileNav)

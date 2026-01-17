@@ -1,11 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import { API_URL } from '../config/api'
 import './Analytics.css'
-
-const API_URL = import.meta.env.VITE_API_URL || (
-  import.meta.env.MODE === 'production'
-    ? window.location.origin
-    : 'http://localhost:3001'
-);
 
 function Analytics({ socket }) {
   const [metrics, setMetrics] = useState({
@@ -49,28 +44,7 @@ function Analytics({ socket }) {
   const [period, setPeriod] = useState('today')
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchMetrics()
-
-    // Atualiza métricas a cada 30 segundos
-    const interval = setInterval(fetchMetrics, 30000)
-
-    // Escuta eventos de atualização via WebSocket
-    if (socket) {
-      socket.on('metrics-updated', (data) => {
-        setMetrics(data)
-      })
-
-      return () => {
-        socket.off('metrics-updated')
-        clearInterval(interval)
-      }
-    }
-
-    return () => clearInterval(interval)
-  }, [period, socket])
-
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/api/metrics?period=${period}`)
       const data = await response.json()
@@ -80,27 +54,74 @@ function Analytics({ socket }) {
       console.error('Erro ao carregar métricas:', error)
       setLoading(false)
     }
-  }
+  }, [period])
 
-  const formatTime = (seconds) => {
+  const handleMetricsUpdated = useCallback((data) => {
+    setMetrics(data)
+  }, [])
+
+  useEffect(() => {
+    fetchMetrics()
+
+    // Atualiza métricas a cada 30 segundos
+    const interval = setInterval(fetchMetrics, 30000)
+
+    // Escuta eventos de atualização via WebSocket
+    if (socket) {
+      socket.on('metrics-updated', handleMetricsUpdated)
+
+      return () => {
+        socket.off('metrics-updated', handleMetricsUpdated)
+        clearInterval(interval)
+      }
+    }
+
+    return () => clearInterval(interval)
+  }, [fetchMetrics, socket, handleMetricsUpdated])
+
+  const formatTime = useCallback((seconds) => {
     if (seconds < 60) return `${Math.round(seconds)}s`
     if (seconds < 3600) return `${Math.round(seconds / 60)}m`
     return `${Math.round(seconds / 3600)}h`
-  }
+  }, [])
 
-  const calculatePercentage = (current, total) => {
+  const calculatePercentage = useCallback((current, total) => {
     if (total === 0) return 0
     return Math.round((current / total) * 100)
-  }
+  }, [])
 
-  const getChangeIndicator = (current, previous) => {
+  const getChangeIndicator = useCallback((current, previous) => {
     if (previous === 0) return { value: '+100', positive: true }
     const change = Math.round(((current - previous) / previous) * 100)
     return {
       value: change > 0 ? `+${change}` : `${change}`,
       positive: change >= 0
     }
-  }
+  }, [])
+
+  const conversationsChange = useMemo(() =>
+    getChangeIndicator(
+      metrics.thisWeek.conversations,
+      metrics.lastWeek.conversations
+    ),
+    [metrics.thisWeek.conversations, metrics.lastWeek.conversations, getChangeIndicator]
+  )
+
+  const messagesChange = useMemo(() =>
+    getChangeIndicator(
+      metrics.thisWeek.messages,
+      metrics.lastWeek.messages
+    ),
+    [metrics.thisWeek.messages, metrics.lastWeek.messages, getChangeIndicator]
+  )
+
+  const leadsChange = useMemo(() =>
+    getChangeIndicator(
+      metrics.thisWeek.leads,
+      metrics.lastWeek.leads
+    ),
+    [metrics.thisWeek.leads, metrics.lastWeek.leads, getChangeIndicator]
+  )
 
   if (loading) {
     return (
@@ -110,19 +131,6 @@ function Analytics({ socket }) {
       </div>
     )
   }
-
-  const conversationsChange = getChangeIndicator(
-    metrics.thisWeek.conversations,
-    metrics.lastWeek.conversations
-  )
-  const messagesChange = getChangeIndicator(
-    metrics.thisWeek.messages,
-    metrics.lastWeek.messages
-  )
-  const leadsChange = getChangeIndicator(
-    metrics.thisWeek.leads,
-    metrics.lastWeek.leads
-  )
 
   return (
     <div className="analytics-container">
@@ -413,4 +421,4 @@ function Analytics({ socket }) {
   )
 }
 
-export default Analytics
+export default memo(Analytics)
