@@ -1,69 +1,38 @@
-import { useState, useEffect } from 'react'
-import { io } from 'socket.io-client'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { useAuth } from './contexts/AuthContext'
+import { API_URL } from './config/api'
+import { useSocket } from './hooks/useSocket'
 import Login from './components/Login'
 import Sidebar from './components/Sidebar'
 import MobileNav from './components/MobileNav'
 import ChatWindow from './components/ChatWindow'
-import KanbanBoard from './components/KanbanBoard'
-import Analytics from './components/Analytics'
-import WhatsAppConnection from './components/WhatsAppConnection'
-import ProductStock from './components/ProductStock'
 import NewConversationModal from './components/NewConversationModal'
 import './App.css'
 
-// Em produção, usa a mesma URL do site. Em desenvolvimento, usa localhost
-const API_URL = import.meta.env.VITE_API_URL || (
-  import.meta.env.MODE === 'production'
-    ? window.location.origin
-    : 'http://localhost:3001'
-)
-const socket = io(API_URL)
+// Lazy loading de componentes pesados
+const KanbanBoard = lazy(() => import('./components/KanbanBoard'))
+const Analytics = lazy(() => import('./components/Analytics'))
+const WhatsAppConnection = lazy(() => import('./components/WhatsAppConnection'))
+const ProductStock = lazy(() => import('./components/ProductStock'))
 
-// Tornar socket disponível globalmente para os componentes
-window.socket = socket
+// Loading component para Suspense
+const LoadingFallback = () => (
+  <div className="app-loading">
+    <div className="spinner-large"></div>
+  </div>
+)
 
 function App() {
   const { user, loading: authLoading } = useAuth()
-  const [currentView, setCurrentView] = useState('chat') // 'chat', 'crm', 'analytics', 'whatsapp' ou 'stock'
+  const { socket, on, off } = useSocket()
+  const [currentView, setCurrentView] = useState('chat')
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showNewConversationModal, setShowNewConversationModal] = useState(false)
 
-  // Carrega conversas iniciais - só executa se usuário estiver autenticado
-  useEffect(() => {
-    if (!user) return
-
-    fetchConversations()
-
-    // Escuta mensagens via WebSocket
-    socket.on('init', (data) => {
-      setConversations(data.sort((a, b) =>
-        new Date(b.lastTimestamp) - new Date(a.lastTimestamp)
-      ))
-      setLoading(false)
-    })
-
-    socket.on('message', ({ userId, conversation }) => {
-      setConversations(prev => {
-        const filtered = prev.filter(c => c.userId !== userId)
-        return [conversation, ...filtered]
-      })
-
-      // Atualiza conversa selecionada se for a mesma
-      if (selectedConversation?.userId === userId) {
-        setSelectedConversation(conversation)
-      }
-    })
-
-    return () => {
-      socket.off('init')
-      socket.off('message')
-    }
-  }, [user, selectedConversation?.userId])
-
-  const fetchConversations = async () => {
+  // Callbacks estabilizados com useCallback
+  const fetchConversations = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/api/conversations`)
       const data = await response.json()
@@ -73,9 +42,52 @@ function App() {
       console.error('Erro ao carregar conversas:', error)
       setLoading(false)
     }
-  }
+  }, [])
 
-  const handleSelectConversation = async (conversation) => {
+  // Handler de init estabilizado
+  const handleInit = useCallback((data) => {
+    const sortedData = data.sort((a, b) =>
+      new Date(b.lastTimestamp) - new Date(a.lastTimestamp)
+    )
+    setConversations(sortedData)
+    setLoading(false)
+  }, [])
+
+  // Handler de message estabilizado
+  const handleMessage = useCallback(({ userId, conversation }) => {
+    setConversations(prev => {
+      const filtered = prev.filter(c => c.userId !== userId)
+      return [conversation, ...filtered]
+    })
+
+    setSelectedConversation(prev => {
+      if (prev?.userId === userId) {
+        return conversation
+      }
+      return prev
+    })
+  }, [])
+
+  // Carrega conversas iniciais - só executa se usuário estiver autenticado
+  useEffect(() => {
+    if (!user || !socket) return
+
+    // Só faz fetch se não houver listener socket ainda
+    if (conversations.length === 0) {
+      fetchConversations()
+    }
+
+    // Escuta mensagens via WebSocket
+    on('init', handleInit)
+    on('message', handleMessage)
+
+    return () => {
+      off('init', handleInit)
+      off('message', handleMessage)
+    }
+  }, [user, socket, on, off, fetchConversations, handleInit, handleMessage])
+
+  const handleSelectConversation = useCallback(async (conversation) => {
     try {
       // Carrega apenas as últimas 50 mensagens inicialmente
       const response = await fetch(`${API_URL}/api/conversations/${conversation.userId}?limit=50&offset=0`)
@@ -89,9 +101,9 @@ function App() {
     } catch (error) {
       console.error('Erro ao carregar conversa:', error)
     }
-  }
+  }, [])
 
-  const handleSendMessage = async (messageData) => {
+  const handleSendMessage = useCallback(async (messageData) => {
     if (!selectedConversation) return
 
     console.log('📤 handleSendMessage chamado com:', messageData)
@@ -138,21 +150,18 @@ function App() {
     } catch (error) {
       console.error('❌ Erro ao enviar mensagem:', error)
     }
-  }
+  }, [selectedConversation])
 
-  const handleNewConversation = () => {
+  const handleNewConversation = useCallback(() => {
     setShowNewConversationModal(true)
-  }
+  }, [])
 
-  const handleConversationCreated = (newConversation) => {
-    // Adiciona a nova conversa na lista
+  const handleConversationCreated = useCallback((newConversation) => {
     setConversations(prev => [newConversation, ...prev])
-
-    // Seleciona automaticamente a nova conversa
     setSelectedConversation(newConversation)
-  }
+  }, [])
 
-  const handleLoadMoreMessages = async () => {
+  const handleLoadMoreMessages = useCallback(async () => {
     if (!selectedConversation || !selectedConversation.hasMore) return
 
     try {
@@ -175,7 +184,7 @@ function App() {
       console.error('Erro ao carregar mais mensagens:', error)
       return 0
     }
-  }
+  }, [selectedConversation])
 
   // Mostra tela de loading durante autenticação
   if (authLoading) {
@@ -249,7 +258,9 @@ function App() {
               WhatsApp
             </button>
           </div>
-          <KanbanBoard socket={socket} />
+          <Suspense fallback={<LoadingFallback />}>
+            <KanbanBoard socket={socket} />
+          </Suspense>
         </div>
       ) : currentView === 'analytics' ? (
         <div className="analytics-view">
@@ -273,7 +284,9 @@ function App() {
               WhatsApp
             </button>
           </div>
-          <Analytics socket={socket} />
+          <Suspense fallback={<LoadingFallback />}>
+            <Analytics socket={socket} />
+          </Suspense>
         </div>
       ) : currentView === 'whatsapp' ? (
         <div className="whatsapp-view">
@@ -297,7 +310,9 @@ function App() {
               Analytics
             </button>
           </div>
-          <WhatsAppConnection socket={socket} />
+          <Suspense fallback={<LoadingFallback />}>
+            <WhatsAppConnection socket={socket} />
+          </Suspense>
         </div>
       ) : (
         <div className="stock-view">
@@ -327,7 +342,9 @@ function App() {
               WhatsApp
             </button>
           </div>
-          <ProductStock />
+          <Suspense fallback={<LoadingFallback />}>
+            <ProductStock />
+          </Suspense>
         </div>
       )}
 
