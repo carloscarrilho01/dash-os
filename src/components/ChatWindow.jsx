@@ -16,6 +16,23 @@ function ImagePreview({ src, alt }) {
   const [hasError, setHasError] = useState(false);
   const [imageSrc, setImageSrc] = useState(src);
 
+  // Log inicial para debug
+  useEffect(() => {
+    console.group('🖼️ ImagePreview iniciado');
+    console.log('Src recebido:', src ? 'SIM' : 'NÃO');
+    console.log('Src length:', src?.length);
+    console.log('Src prefix (60 chars):', src?.substring(0, 60));
+    console.log('Começa com data:image:', src?.startsWith('data:image/'));
+
+    if (src?.startsWith('data:')) {
+      const mimeMatch = src.match(/data:([^;]+);/);
+      console.log('MIME type detectado:', mimeMatch?.[1]);
+    } else {
+      console.warn('⚠️ SRC NÃO COMEÇA COM data:');
+    }
+    console.groupEnd();
+  }, [src]);
+
   const handleLoad = () => {
     setIsLoading(false);
     setHasError(false);
