@@ -224,7 +224,13 @@ function ChatWindow({ conversation, onSendMessage, onLoadMoreMessages, socket, c
               <span>Carregando mensagens anteriores...</span>
             </div>
           )}
-          {conversation.messages.map((msg) => (
+          {conversation.messages.map((msg) => {
+            // Debug: log mensagem para verificar tipo
+            if (msg.type && msg.type !== 'text') {
+              console.log('🔍 Renderizando mensagem:', { type: msg.type, hasAudioUrl: !!msg.audioUrl, hasFileUrl: !!msg.fileUrl, fileCategory: msg.fileCategory });
+            }
+
+            return (
             <div
               key={msg.id}
               className={`message ${msg.isBot ? 'bot' : msg.isAgent ? 'agent' : 'user'}`}
@@ -275,7 +281,8 @@ function ChatWindow({ conversation, onSendMessage, onLoadMoreMessages, socket, c
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
       </div>

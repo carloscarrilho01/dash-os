@@ -13,6 +13,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const httpServer = createServer(app);
 
+// Trust proxy - necessário para Render e outros serviços atrás de proxy
+app.set('trust proxy', 1);
+
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:3000',

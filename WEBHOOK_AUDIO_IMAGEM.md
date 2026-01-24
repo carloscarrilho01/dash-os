@@ -45,6 +45,8 @@ O backend agora detecta **automaticamente** o tipo de mensagem baseado no conte�
 
 ### 1. Enviar Áudio (WhatsApp → n8n → Dashboard)
 
+**⚠️ IMPORTANTE: O base64 DEVE incluir o prefixo `data:audio/[tipo];base64,`**
+
 **Exemplo de Fluxo n8n:**
 
 ```
@@ -55,17 +57,28 @@ O backend agora detecta **automaticamente** o tipo de mensagem baseado no conte�
   const base64Audio = audioBuffer.toString('base64');
   const mimeType = items[0].binary.audio.mimeType || 'audio/webm';
 
+  // ✅ CORRETO: Adiciona prefixo data:audio/...;base64,
   return [{
     json: {
       userId: items[0].json.from,
       userName: items[0].json.contact?.name || items[0].json.from,
-      message: `data:${mimeType};base64,${base64Audio}`,
+      message: `data:${mimeType};base64,${base64Audio}`,  // ← Prefixo obrigatório!
       isBot: true,
       timestamp: new Date().toISOString()
     }
   }];
   ↓
 [HTTP Request - POST para /api/webhook/message]
+```
+
+**❌ ERRADO - Base64 sem prefixo:**
+```javascript
+message: base64Audio  // Aparece como texto gigante!
+```
+
+**✅ CORRETO - Base64 com prefixo:**
+```javascript
+message: `data:audio/webm;base64,${base64Audio}`  // Detectado como áudio!
 ```
 
 **Resultado no Dashboard:**
@@ -196,14 +209,47 @@ Quando uma imagem for recebida:
 
 ## 🐛 Troubleshooting
 
-### Problema: Áudio não aparece no painel
+### ⚠️ Problema Comum: Aparece texto gigante ao invés de áudio/imagem
+
+**Sintoma:** Você envia um áudio ou imagem mas aparece um texto enorme com caracteres aleatórios no painel.
+
+**Causa:** O base64 está sendo enviado **SEM o prefixo** `data:audio/...;base64,` ou `data:image/...;base64,`.
+
+**Exemplo do que NÃO fazer:**
+```json
+{
+  "message": "GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQR..."
+}
+```
+
+**Exemplo CORRETO:**
+```json
+{
+  "message": "data:audio/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQR..."
+}
+```
+
+**Solução no n8n:**
+```javascript
+// ❌ ERRADO
+message: audioBuffer.toString('base64')
+
+// ✅ CORRETO
+message: `data:audio/webm;base64,${audioBuffer.toString('base64')}`
+```
+
+**Como verificar:** Olhe os logs do servidor:
+- ✅ Se aparecer `🎤 Áudio detectado` → funcionando
+- ❌ Se NÃO aparecer nada → falta o prefixo
+
+---
+
+### Problema: Áudio não aparece no painel (com prefixo correto)
 **Possíveis causas:**
-1. Base64 não tem o prefixo `data:audio/...;base64,`
-2. Formato de áudio não é suportado pelo navegador
-3. Base64 está corrompido ou incompleto
+1. Formato de áudio não é suportado pelo navegador
+2. Base64 está corrompido ou incompleto
 
 **Solução:**
-- Verifique se o base64 começa com `data:audio/[tipo];base64,`
 - Use formatos web-safe: `webm`, `mp3`, `ogg`
 - Valide o base64 antes de enviar
 
