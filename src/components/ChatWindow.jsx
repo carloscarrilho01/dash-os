@@ -114,12 +114,12 @@ function ImagePreview({ src, alt }) {
   );
 }
 
-function ChatWindow({ conversation, onSendMessage, onLoadMoreMessages, socket, conversations, onSelectConversation }) {
+function ChatWindow({ conversation, onSendMessage, onLoadMoreMessages, socket, conversations, onSelectConversation, loadingConversation = false }) {
   // ==================== DEBUG CRÍTICO ====================
   console.log('🚨🚨🚨 CHATWINDOW RENDERIZOU! 🚨🚨🚨');
   console.log('Conversa userId:', conversation?.userId);
   console.log('Total de mensagens:', conversation?.messages?.length);
-  console.log('Primeira mensagem:', conversation?.messages?.[0]);
+  console.log('Loading conversation:', loadingConversation);
   // ==================== FIM DEBUG ====================
 
   const [message, setMessage] = useState('')
@@ -329,6 +329,12 @@ function ChatWindow({ conversation, onSendMessage, onLoadMoreMessages, socket, c
 
       <div className="chat-messages" ref={messagesContainerRef}>
         <div className="messages-container">
+          {loadingConversation && !conversation ? (
+            <div className="loading-conversation">
+              <div className="loading-spinner-medium"></div>
+              <span>Carregando conversa...</span>
+            </div>
+          ) : null}
           {isLoadingMore && (
             <div className="loading-more-messages">
               <div className="loading-spinner-small"></div>

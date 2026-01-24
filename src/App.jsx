@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { API_URL } from './config/api'
 import { useSocket } from './hooks/useSocket'
+import { useConversationCache } from './hooks/useConversationCache'
 import { preloadComponents } from './utils/preloadComponents'
 import Login from './components/Login'
 import Sidebar from './components/Sidebar'
@@ -29,10 +30,12 @@ const LoadingFallback = () => (
 function App() {
   const { user, loading: authLoading } = useAuth()
   const { socket, on, off } = useSocket()
+  const conversationCache = useConversationCache()
   const [currentView, setCurrentView] = useState('chat')
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadingConversation, setLoadingConversation] = useState(false)
   const [showNewConversationModal, setShowNewConversationModal] = useState(false)
 
   // Callbacks estabilizados com useCallback
@@ -104,19 +107,71 @@ function App() {
 
   const handleSelectConversation = useCallback(async (conversation) => {
     try {
-      // Carrega apenas as últimas 50 mensagens inicialmente
-      const response = await fetch(`${API_URL}/api/conversations/${conversation.userId}?limit=50&offset=0`)
+      const userId = conversation.userId
+
+      // Verifica se já está carregando para evitar requests duplicados
+      if (conversationCache.isLoading(userId)) {
+        return
+      }
+
+      // Verifica se está em cache e não está stale (< 5min)
+      if (conversationCache.has(userId) && !conversationCache.isStale(userId)) {
+        const cached = conversationCache.get(userId)
+        setSelectedConversation(cached.data)
+        setLoadingConversation(false)
+
+        // Atualiza contador de não lidas
+        setConversations(prev =>
+          prev.map(c => c.userId === userId ? { ...c, unread: 0 } : c)
+        )
+        return
+      }
+
+      // Mostra loading apenas se não tiver cache
+      if (!conversationCache.has(userId)) {
+        setLoadingConversation(true)
+      } else {
+        // Se tem cache mas está stale, mostra cache enquanto atualiza em background
+        const cached = conversationCache.get(userId)
+        setSelectedConversation(cached.data)
+      }
+
+      // Marca como carregando
+      conversationCache.setLoading(userId)
+
+      // Carrega apenas as últimas 30 mensagens inicialmente (reduzido de 50)
+      const response = await fetch(`${API_URL}/api/conversations/${userId}?limit=30&offset=0`)
       const data = await response.json()
+
+      // Atualiza cache
+      conversationCache.set(userId, data)
+      conversationCache.clearLoading(userId)
+
       setSelectedConversation(data)
+      setLoadingConversation(false)
 
       // Atualiza o contador de não lidas
       setConversations(prev =>
-        prev.map(c => c.userId === conversation.userId ? { ...c, unread: 0 } : c)
+        prev.map(c => c.userId === userId ? { ...c, unread: 0 } : c)
       )
+
+      // Prefetch da próxima conversa (primeira na lista que não é a atual)
+      const nextConversation = conversations.find(c => c.userId !== userId)
+      if (nextConversation && !conversationCache.has(nextConversation.userId)) {
+        // Aguarda 500ms antes de fazer prefetch
+        setTimeout(() => {
+          fetch(`${API_URL}/api/conversations/${nextConversation.userId}?limit=30&offset=0`)
+            .then(res => res.json())
+            .then(data => conversationCache.set(nextConversation.userId, data))
+            .catch(() => {}) // Ignora erros de prefetch
+        }, 500)
+      }
     } catch (error) {
       console.error('Erro ao carregar conversa:', error)
+      conversationCache.clearLoading(conversation.userId)
+      setLoadingConversation(false)
     }
-  }, [])
+  }, [conversationCache, conversations])
 
   const handleSendMessage = useCallback(async (messageData) => {
     if (!selectedConversation) return
@@ -247,6 +302,7 @@ function App() {
             socket={socket}
             conversations={conversations}
             onSelectConversation={handleSelectConversation}
+            loadingConversation={loadingConversation}
           />
         </>
       ) : currentView === 'crm' ? (
