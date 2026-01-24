@@ -28,7 +28,12 @@ export async function connectDatabase() {
       throw error;
     }
 
-    console.log('✅ Supabase conectado com sucesso!');
+    // Identifica o tipo de chave sendo usada
+    const isServiceRole = SUPABASE_KEY.startsWith('eyJ') && SUPABASE_KEY.includes('service_role');
+    console.log(`✅ Supabase conectado com sucesso! (Chave: ${isServiceRole ? 'service_role ✓' : 'anon ⚠️ - RLS será aplicado'})`);
+    if (!isServiceRole) {
+      console.log('💡 Dica: Use a chave service_role no SUPABASE_KEY para ignorar RLS no backend.');
+    }
     isConnected = true;
     return true;
   } catch (error) {
@@ -988,12 +993,16 @@ export const ServiceOrderDB = {
       };
     } catch (error) {
       console.error('❌ Erro ao criar ordem de serviço:', error.message || error);
-      if (error.code === '42P01') {
-        console.error('❌ A tabela "service_orders" não existe. Execute o SQL do arquivo supabase_service_orders.sql no Supabase Dashboard.');
-      }
+      console.error('❌ Código:', error.code);
       if (error.details) console.error('❌ Detalhes:', error.details);
       if (error.hint) console.error('❌ Dica:', error.hint);
-      return null;
+
+      // Re-throw with more context for the API layer
+      const enhancedError = new Error(error.message || 'Erro desconhecido');
+      enhancedError.code = error.code;
+      enhancedError.details = error.details;
+      enhancedError.hint = error.hint;
+      throw enhancedError;
     }
   },
 

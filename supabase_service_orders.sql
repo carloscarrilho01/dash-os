@@ -118,7 +118,11 @@ $$ LANGUAGE plpgsql;
 -- RLS (Row Level Security)
 ALTER TABLE service_orders ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Permitir acesso total às ordens de serviço"
+-- Política permissiva para todas as operações
+CREATE POLICY "allow_all_service_orders"
   ON service_orders FOR ALL
   USING (true)
   WITH CHECK (true);
+
+-- Se a política acima não funcionar, execute este comando para desativar RLS:
+-- ALTER TABLE service_orders DISABLE ROW LEVEL SECURITY;

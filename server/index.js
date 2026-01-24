@@ -1240,10 +1240,6 @@ app.post('/api/service-orders', writeLimiter, async (req, res) => {
     }
 
     const order = await ServiceOrderDB.create(req.body);
-    if (!order) {
-      console.error('❌ ServiceOrderDB.create retornou null - verifique se a tabela service_orders existe no Supabase');
-      return res.status(500).json({ error: 'Erro ao criar OS. Verifique se a tabela service_orders existe no Supabase.' });
-    }
 
     console.log('✅ OS criada com sucesso:', order.numeroOs);
 
@@ -1253,7 +1249,17 @@ app.post('/api/service-orders', writeLimiter, async (req, res) => {
     res.status(201).json(order);
   } catch (error) {
     console.error('❌ Erro ao criar ordem de serviço:', error);
-    res.status(500).json({ error: 'Erro ao criar ordem de serviço: ' + error.message });
+
+    let errorMessage = 'Erro ao criar ordem de serviço';
+    if (error.code === '42P01') {
+      errorMessage = 'Tabela service_orders não existe. Execute o SQL no Supabase.';
+    } else if (error.code === '42501' || (error.message && error.message.includes('policy'))) {
+      errorMessage = 'Erro de permissão (RLS). Verifique as políticas da tabela service_orders no Supabase.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    res.status(500).json({ error: errorMessage });
   }
 });
 
