@@ -10,6 +10,10 @@ import CustomAudioPlayer from './CustomAudioPlayer'
 import './ChatWindow.css'
 import './FileUploader.css'
 
+// ==================== DEBUG - EXECUTA IMEDIATAMENTE ====================
+console.log('🔥🔥🔥 CHATWINDOW.JSX CARREGADO! Versão:', new Date().toISOString());
+// =======================================================================
+
 // Componente para preview de imagem com tratamento de erro
 function ImagePreview({ src, alt }) {
   const [isLoading, setIsLoading] = useState(true);
