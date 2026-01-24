@@ -323,6 +323,14 @@ app.post('/api/webhook/message', webhookLimiter, async (req, res) => {
     // Salva no banco ou memória
     await saveConversation(userId, conversation);
 
+    // LOG CRÍTICO: Verifica o que está sendo enviado via Socket.IO
+    if (messageInfo.type === 'file' && messageInfo.data.fileCategory === 'image') {
+      console.log('🔍 ENVIANDO IMAGEM VIA SOCKET.IO:');
+      console.log('  - fileUrl existe?', !!newMessage.fileUrl);
+      console.log('  - fileUrl length:', newMessage.fileUrl?.length);
+      console.log('  - fileUrl prefix:', newMessage.fileUrl?.substring(0, 50));
+    }
+
     // Emite a atualização via WebSocket
     io.emit('message', {
       userId,
