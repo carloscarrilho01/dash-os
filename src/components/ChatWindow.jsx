@@ -23,8 +23,33 @@ function ImagePreview({ src, alt }) {
   };
 
   const handleError = (e) => {
-    console.error('❌ Erro ao carregar imagem:', e);
-    console.error('Src:', src?.substring(0, 100) + '...');
+    console.group('❌ Erro ao carregar imagem');
+    console.error('Event:', e);
+    console.error('Tipo do erro:', e.type);
+    console.error('Src length:', src?.length);
+    console.error('Src prefix:', src?.substring(0, 80));
+
+    // Verifica se é base64 válido
+    if (src?.startsWith('data:image/')) {
+      const parts = src.split(',');
+      console.error('MIME type:', src.match(/data:([^;]+);/)?.[1]);
+      console.error('Has base64 data:', parts.length > 1);
+      if (parts.length > 1) {
+        console.error('Base64 length:', parts[1]?.length);
+        // Testa se base64 é válido
+        try {
+          atob(parts[1].substring(0, 100));
+          console.error('✅ Base64 parece válido');
+        } catch (err) {
+          console.error('❌ Base64 inválido:', err.message);
+        }
+      }
+    } else {
+      console.error('⚠️ PROBLEMA: Imagem não começa com data:image/');
+      console.error('Começa com:', src?.substring(0, 20));
+    }
+    console.groupEnd();
+
     setIsLoading(false);
     setHasError(true);
   };
