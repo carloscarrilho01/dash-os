@@ -37,7 +37,6 @@ export default defineConfig({
           'stock': ['./src/components/ProductStock.jsx'],
           'service-orders': [
             './src/components/ServiceOrders.jsx',
-            './src/components/CreateEditOS.jsx',
             './src/components/OSPdfGenerator.jsx'
           ]
         }
