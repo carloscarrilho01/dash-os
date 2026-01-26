@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, memo } from 'react'
 import { API_URL } from '../config/api'
-import CreateEditOS from './CreateEditOS'
 import OSPdfGenerator from './OSPdfGenerator'
 import './ServiceOrders.css'
 
@@ -419,14 +418,6 @@ function ServiceOrders({ socket }) {
           </div>
         </div>
 
-        {showModal && (
-          <CreateEditOS
-            order={selectedOrder}
-            onSave={handleSave}
-            onClose={() => setShowModal(false)}
-          />
-        )}
-
         {showPdf && (
           <OSPdfGenerator
             order={selectedOrder}
@@ -600,14 +591,6 @@ function ServiceOrders({ socket }) {
           </div>
         )}
       </div>
-
-      {showModal && (
-        <CreateEditOS
-          order={selectedOrder}
-          onSave={handleSave}
-          onClose={() => setShowModal(false)}
-        />
-      )}
 
       {showPdf && selectedOrder && (
         <OSPdfGenerator
