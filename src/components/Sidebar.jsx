@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from 'react'
+import { memo, useCallback, useState, useMemo } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { formatConversationTime } from '../utils/dateFormatters'
@@ -9,6 +9,7 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
   const { isDark, toggleTheme } = useTheme()
   const [filterLabelId, setFilterLabelId] = useState(null)
   const [showLabelFilter, setShowLabelFilter] = useState(false)
+  const [activeTab, setActiveTab] = useState('all') // 'all' ou 'on-hold'
 
   // Cria um mapa de labels para acesso rápido
   const labelsMap = labels.reduce((acc, label) => {
@@ -16,10 +17,28 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
     return acc
   }, {})
 
-  // Filtra conversas por etiqueta
-  const filteredConversations = filterLabelId
-    ? conversations.filter(c => c.labelId === filterLabelId)
-    : conversations
+  // Contagem de conversas em espera
+  const onHoldCount = useMemo(() =>
+    conversations.filter(c => c.onHold).length,
+    [conversations]
+  )
+
+  // Filtra conversas por aba e etiqueta
+  const filteredConversations = useMemo(() => {
+    let filtered = conversations
+
+    // Filtro por aba (todos ou em espera)
+    if (activeTab === 'on-hold') {
+      filtered = filtered.filter(c => c.onHold)
+    }
+
+    // Filtro por etiqueta
+    if (filterLabelId) {
+      filtered = filtered.filter(c => c.labelId === filterLabelId)
+    }
+
+    return filtered
+  }, [conversations, activeTab, filterLabelId])
 
   const formatTime = useCallback((timestamp) => {
     try {
@@ -115,6 +134,25 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
         </div>
       </div>
 
+      {/* Abas de filtro principal */}
+      <div className="sidebar-tabs">
+        <button
+          className={`sidebar-tab ${activeTab === 'all' ? 'active' : ''}`}
+          onClick={() => setActiveTab('all')}
+        >
+          Todos
+        </button>
+        <button
+          className={`sidebar-tab ${activeTab === 'on-hold' ? 'active' : ''}`}
+          onClick={() => setActiveTab('on-hold')}
+        >
+          Em espera
+          {onHoldCount > 0 && (
+            <span className="tab-count">{onHoldCount}</span>
+          )}
+        </button>
+      </div>
+
       <div className="sidebar-search">
         <div className="search-box">
           <svg viewBox="0 0 24 24" width="20" height="20" className="search-icon">
@@ -166,7 +204,12 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
           <div className="loading">Carregando conversas...</div>
         ) : filteredConversations.length === 0 ? (
           <div className="empty-state">
-            {filterLabelId ? (
+            {activeTab === 'on-hold' ? (
+              <>
+                <p>Nenhuma conversa em espera</p>
+                <small>Conversas marcadas como "em espera" aparecerao aqui</small>
+              </>
+            ) : filterLabelId ? (
               <>
                 <p>Nenhuma conversa com esta etiqueta</p>
                 <small>Remova o filtro para ver todas as conversas</small>
@@ -174,7 +217,7 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
             ) : (
               <>
                 <p>Nenhuma conversa ainda</p>
-                <small>As conversas do n8n aparecerão aqui</small>
+                <small>As conversas do n8n aparecerao aqui</small>
               </>
             )}
           </div>
@@ -186,7 +229,7 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
                 key={conversation.userId}
                 className={`conversation-item ${
                   selectedConversation?.userId === conversation.userId ? 'active' : ''
-                }`}
+                } ${conversation.onHold ? 'on-hold' : ''}`}
                 onClick={() => onSelectConversation(conversation)}
               >
                 <div className="conversation-avatar">

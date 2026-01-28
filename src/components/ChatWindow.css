@@ -96,6 +96,39 @@
   align-items: center;
 }
 
+/* Botao Em Espera */
+.on-hold-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+}
+
+.on-hold-button:hover {
+  background: var(--color-orange-bg);
+  color: var(--color-orange);
+  border-color: var(--color-orange-border);
+  transform: scale(1.05);
+}
+
+.on-hold-button.on-hold {
+  background: var(--color-orange);
+  color: white;
+  border-color: var(--color-orange);
+  box-shadow: 0 0 8px rgba(255, 152, 0, 0.4);
+}
+
+.on-hold-button.on-hold:hover {
+  background: var(--color-orange-dark, #e65100);
+}
+
 .trava-button {
   width: 40px;
   height: 40px;

@@ -63,7 +63,8 @@ export const ConversationDB = {
         lastMessage: row.last_message,
         lastTimestamp: row.last_timestamp,
         unread: row.unread || 0,
-        labelId: row.label_id || null
+        labelId: row.label_id || null,
+        onHold: row.on_hold || false
       }));
     } catch (error) {
       console.error('Erro ao buscar conversas:', error);
@@ -93,7 +94,8 @@ export const ConversationDB = {
         lastMessage: data.last_message,
         lastTimestamp: data.last_timestamp,
         unread: data.unread || 0,
-        labelId: data.label_id || null
+        labelId: data.label_id || null,
+        onHold: data.on_hold || false
       };
     } catch (error) {
       console.error('Erro ao buscar conversa:', error);
@@ -130,11 +132,33 @@ export const ConversationDB = {
         lastMessage: data.last_message,
         lastTimestamp: data.last_timestamp,
         unread: data.unread || 0,
-        labelId: data.label_id || null
+        labelId: data.label_id || null,
+        onHold: data.on_hold || false
       };
     } catch (error) {
       console.error('Erro ao salvar conversa:', error);
       return conversation;
+    }
+  },
+
+  async setOnHold(userId, onHold) {
+    if (!isConnected) return false;
+
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .update({
+          on_hold: onHold,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao definir status de espera:', error);
+      return false;
     }
   },
 
@@ -983,7 +1007,8 @@ export const ConversationLabelDB = {
         lastMessage: row.last_message,
         lastTimestamp: row.last_timestamp,
         unread: row.unread || 0,
-        labelId: row.label_id
+        labelId: row.label_id,
+        onHold: row.on_hold || false
       }));
     } catch (error) {
       console.error('Erro ao buscar conversas por etiqueta:', error);

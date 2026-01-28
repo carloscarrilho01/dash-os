@@ -1336,6 +1336,28 @@ app.get('/api/labels/:id/conversations', async (req, res) => {
   }
 });
 
+// PUT /api/conversations/:userId/on-hold - Define status de espera de uma conversa
+app.put('/api/conversations/:userId/on-hold', writeLimiter, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { onHold } = req.body;
+
+    const success = await ConversationDB.setOnHold(userId, onHold);
+
+    if (!success) {
+      return res.status(500).json({ error: 'Erro ao atualizar status de espera' });
+    }
+
+    // Emite evento WebSocket para atualizar todos os clientes
+    io.emit('conversation-on-hold-updated', { userId, onHold });
+
+    res.json({ success: true, onHold });
+  } catch (error) {
+    console.error('Erro ao definir status de espera:', error);
+    res.status(500).json({ error: 'Erro ao definir status de espera' });
+  }
+});
+
 // ==========================================
 // Rotas de Ordens de Serviço (OS)
 // ==========================================
