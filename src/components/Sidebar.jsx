@@ -17,9 +17,9 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
     return acc
   }, {})
 
-  // Contagem de conversas em espera
+  // Contagem de conversas em espera (usando trava do lead)
   const onHoldCount = useMemo(() =>
-    conversations.filter(c => c.onHold).length,
+    conversations.filter(c => c.trava).length,
     [conversations]
   )
 
@@ -27,9 +27,9 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
   const filteredConversations = useMemo(() => {
     let filtered = conversations
 
-    // Filtro por aba (todos ou em espera)
+    // Filtro por aba (todos ou em espera - usa trava do lead)
     if (activeTab === 'on-hold') {
-      filtered = filtered.filter(c => c.onHold)
+      filtered = filtered.filter(c => c.trava)
     }
 
     // Filtro por etiqueta
@@ -229,7 +229,7 @@ function Sidebar({ conversations, selectedConversation, onSelectConversation, lo
                 key={conversation.userId}
                 className={`conversation-item ${
                   selectedConversation?.userId === conversation.userId ? 'active' : ''
-                } ${conversation.onHold ? 'on-hold' : ''}`}
+                } ${conversation.trava ? 'on-hold' : ''}`}
                 onClick={() => onSelectConversation(conversation)}
               >
                 <div className="conversation-avatar">

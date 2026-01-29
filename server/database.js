@@ -49,14 +49,32 @@ export const ConversationDB = {
     if (!isConnected) return [];
 
     try {
-      const { data, error } = await supabase
+      // Busca conversas
+      const { data: conversationsData, error: convError } = await supabase
         .from('conversations')
         .select('*')
         .order('last_timestamp', { ascending: false });
 
-      if (error) throw error;
+      if (convError) throw convError;
 
-      return data.map(row => ({
+      // Busca todos os leads para pegar status de trava
+      const userIds = conversationsData.map(c => c.user_id);
+      const { data: leadsData, error: leadsError } = await supabase
+        .from('leads')
+        .select('telefone, trava')
+        .in('telefone', userIds);
+
+      if (leadsError) throw leadsError;
+
+      // Cria mapa de trava por telefone
+      const travaMap = {};
+      if (leadsData) {
+        leadsData.forEach(lead => {
+          travaMap[lead.telefone] = lead.trava || false;
+        });
+      }
+
+      return conversationsData.map(row => ({
         userId: row.user_id,
         userName: row.user_name,
         messages: row.messages || [],
@@ -64,7 +82,7 @@ export const ConversationDB = {
         lastTimestamp: row.last_timestamp,
         unread: row.unread || 0,
         labelId: row.label_id || null,
-        onHold: row.on_hold || false
+        trava: travaMap[row.user_id] || false
       }));
     } catch (error) {
       console.error('Erro ao buscar conversas:', error);
@@ -87,6 +105,13 @@ export const ConversationDB = {
         throw error;
       }
 
+      // Busca status de trava do lead
+      const { data: leadData } = await supabase
+        .from('leads')
+        .select('trava')
+        .eq('telefone', userId)
+        .single();
+
       return {
         userId: data.user_id,
         userName: data.user_name,
@@ -95,7 +120,7 @@ export const ConversationDB = {
         lastTimestamp: data.last_timestamp,
         unread: data.unread || 0,
         labelId: data.label_id || null,
-        onHold: data.on_hold || false
+        trava: leadData?.trava || false
       };
     } catch (error) {
       console.error('Erro ao buscar conversa:', error);
@@ -125,6 +150,13 @@ export const ConversationDB = {
 
       if (error) throw error;
 
+      // Busca status de trava do lead
+      const { data: leadData } = await supabase
+        .from('leads')
+        .select('trava')
+        .eq('telefone', userId)
+        .single();
+
       return {
         userId: data.user_id,
         userName: data.user_name,
@@ -133,32 +165,11 @@ export const ConversationDB = {
         lastTimestamp: data.last_timestamp,
         unread: data.unread || 0,
         labelId: data.label_id || null,
-        onHold: data.on_hold || false
+        trava: leadData?.trava || false
       };
     } catch (error) {
       console.error('Erro ao salvar conversa:', error);
       return conversation;
-    }
-  },
-
-  async setOnHold(userId, onHold) {
-    if (!isConnected) return false;
-
-    try {
-      const { error } = await supabase
-        .from('conversations')
-        .update({
-          on_hold: onHold,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      return true;
-    } catch (error) {
-      console.error('Erro ao definir status de espera:', error);
-      return false;
     }
   },
 
@@ -1000,6 +1011,21 @@ export const ConversationLabelDB = {
 
       if (error) throw error;
 
+      // Busca todos os leads para pegar status de trava
+      const userIds = data.map(c => c.user_id);
+      const { data: leadsData } = await supabase
+        .from('leads')
+        .select('telefone, trava')
+        .in('telefone', userIds);
+
+      // Cria mapa de trava por telefone
+      const travaMap = {};
+      if (leadsData) {
+        leadsData.forEach(lead => {
+          travaMap[lead.telefone] = lead.trava || false;
+        });
+      }
+
       return data.map(row => ({
         userId: row.user_id,
         userName: row.user_name,
@@ -1008,7 +1034,7 @@ export const ConversationLabelDB = {
         lastTimestamp: row.last_timestamp,
         unread: row.unread || 0,
         labelId: row.label_id,
-        onHold: row.on_hold || false
+        trava: travaMap[row.user_id] || false
       }));
     } catch (error) {
       console.error('Erro ao buscar conversas por etiqueta:', error);

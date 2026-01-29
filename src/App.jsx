@@ -104,14 +104,14 @@ function App() {
     })
   }, [])
 
-  // Handler de atualização de status em espera
-  const handleConversationOnHoldUpdated = useCallback(({ userId, onHold }) => {
+  // Handler de atualização de status de trava (em espera)
+  const handleTravaUpdated = useCallback(({ userId, trava }) => {
     setConversations(prev =>
-      prev.map(c => c.userId === userId ? { ...c, onHold } : c)
+      prev.map(c => c.userId === userId ? { ...c, trava } : c)
     )
     setSelectedConversation(prev => {
       if (prev?.userId === userId) {
-        return { ...prev, onHold }
+        return { ...prev, trava }
       }
       return prev
     })
@@ -134,16 +134,16 @@ function App() {
     on('message', handleMessage)
     on('labels-updated', fetchLabels)
     on('conversation-label-updated', handleConversationLabelUpdated)
-    on('conversation-on-hold-updated', handleConversationOnHoldUpdated)
+    on('trava-updated', handleTravaUpdated)
 
     return () => {
       off('init', handleInit)
       off('message', handleMessage)
       off('labels-updated', fetchLabels)
       off('conversation-label-updated', handleConversationLabelUpdated)
-      off('conversation-on-hold-updated', handleConversationOnHoldUpdated)
+      off('trava-updated', handleTravaUpdated)
     }
-  }, [user, socket, on, off, fetchConversations, fetchLabels, handleInit, handleMessage, handleConversationLabelUpdated, handleConversationOnHoldUpdated])
+  }, [user, socket, on, off, fetchConversations, fetchLabels, handleInit, handleMessage, handleConversationLabelUpdated, handleTravaUpdated])
 
   // Preload de componentes lazy quando usuário está autenticado
   useEffect(() => {
@@ -304,31 +304,6 @@ function App() {
     }
   }, [])
 
-  // Handler para toggle de status em espera
-  const handleToggleOnHold = useCallback(async (userId, onHold) => {
-    try {
-      const response = await fetch(`${API_URL}/api/conversations/${userId}/on-hold`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ onHold })
-      })
-
-      if (response.ok) {
-        // Atualiza localmente
-        setConversations(prev =>
-          prev.map(c => c.userId === userId ? { ...c, onHold } : c)
-        )
-        setSelectedConversation(prev => {
-          if (prev?.userId === userId) {
-            return { ...prev, onHold }
-          }
-          return prev
-        })
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar status de espera:', error)
-    }
-  }, [])
 
   const handleConversationCreated = useCallback((newConversation) => {
     setConversations(prev => [newConversation, ...prev])
@@ -413,7 +388,6 @@ function App() {
             labels={labels}
             onManageLabels={() => setShowLabelManager(true)}
             onLabelChange={handleLabelChange}
-            onToggleOnHold={handleToggleOnHold}
           />
         </>
       ) : currentView === 'crm' ? (
